@@ -62,7 +62,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -149,7 +149,7 @@
       }
     },
     {
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {
         "h": 8,
         "w": 6,
@@ -214,7 +214,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -302,7 +302,7 @@
     },
     {
       "cacheTimeout": null,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {
         "h": 8,
         "w": 6,
@@ -371,7 +371,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -466,7 +466,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -556,7 +556,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -646,7 +646,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -735,14 +735,14 @@
   "refresh": false,
   "schemaVersion": 22,
   "style": "dark",
-  "tags": [],
+  "tags": ["nvidia", "gpu", "dcgm"],
   "templating": {
     "list": [
 
       {
         "allValue": null,
         "current": {},
-        "datasource": "${DS_PROMETHEUS}",
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
         "definition": "label_values(DCGM_FI_DEV_GPU_TEMP, instance)",
         "hide": 0,
         "includeAll": true,
@@ -765,7 +765,7 @@
       {
         "allValue": null,
         "current": {},
-        "datasource": "${DS_PROMETHEUS}",
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
         "definition": "label_values(DCGM_FI_DEV_GPU_TEMP, gpu)",
         "hide": 0,
         "includeAll": true,

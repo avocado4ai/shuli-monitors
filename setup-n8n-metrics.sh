@@ -1,3 +1,101 @@
+#!/bin/bash
+
+echo "Setting up proper n8n metrics configuration..."
+
+# Create a backup of the current prometheus config
+cp /home/dev/2-monitors/.prometheus/prometheus_cfg.yml /home/dev/2-monitors/.prometheus/prometheus_cfg.yml.backup.$(date +%s)
+
+# Update the prometheus configuration to ensure n8n metrics are properly scraped
+echo "Updating Prometheus configuration for n8n metrics..."
+
+# Create the updated prometheus config with n8n metrics
+cat > /home/dev/2-monitors/.prometheus/prometheus_cfg.yml << 'EOF'
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/disk_alerts.yml"
+  - "rules/n8n_alerts.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # PostgreSQL database metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+    scrape_interval: 30s
+
+  # System metrics via node_exporter
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node_exporter:9100']
+    scrape_interval: 30s
+
+  # NVIDIA GPU metrics
+  - job_name: 'nvidia-gpu'
+    static_configs:
+      - targets: ['172.17.0.1:9835']
+    scrape_interval: 30s
+
+  # Ollama server metrics
+  - job_name: 'ollama-servers'
+    static_configs:
+      - targets: ['ollama:11434']
+    metrics_path: '/api/ps'
+    scrape_interval: 30s
+
+  # MinIO metrics
+  - job_name: 'minio'
+    bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwcm9tZXRoZXVzIiwic3ViIjoiZGV2IiwiZXhwIjo0OTExNjc4NjkyfQ.VYB84XC3FI_G0tEqJcJEQ6su3avnm83qaRVCDB2CFK1qWXUSjKyTF78p_rYZoQZjhNSVhofQg5psIOmX6UZqoA
+    metrics_path: '/minio/v2/metrics/cluster'
+    scheme: http
+    static_configs:
+      - targets: ['minio:9000']
+    scrape_interval: 30s
+
+  # Traefik metrics
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # n8n application metrics (main)
+  - job_name: 'n8n-main'
+    static_configs:
+      - targets: ['n8n:9464']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # n8n application metrics (worker)
+  - job_name: 'n8n-worker'
+    static_configs:
+      - targets: ['n8n_worker:9464']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Ollama Metrics Exporter
+  - job_name: 'ollama-metrics'
+    static_configs:
+      - targets: ['172.17.0.1:1313']
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Services without Prometheus metrics endpoints (disabled):
+  # - Redis: Redis Stack UI at port 8001 returns HTML, not Prometheus metrics
+  # - LiteLLM: No metrics endpoint available
+  # - Neo4j: No metrics endpoint in community edition
+  # - OpenWebUI: /metrics returns HTML instead of Prometheus format
+  # - MCP Server: Service not currently running
+EOF
+
+# Create the updated dashboard
+cat > /home/dev/2-monitors/dashboards/n8n-monitoring-final.json << 'EOF'
 {
   "annotations": {
     "list": [
@@ -71,9 +169,14 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "sum(up{job=~\"n8n-(main|worker)\", instance=~\"$n8n_instance\"}) by (job)",
-          "legendFormat": "{{job}} Status",
+          "expr": "up{job=\"n8n-main\"}",
+          "legendFormat": "n8n Main Status",
           "refId": "A"
+        },
+        {
+          "expr": "up{job=\"n8n-worker\"}",
+          "legendFormat": "n8n Worker Status",
+          "refId": "B"
         }
       ],
       "title": "n8n Health Status",
@@ -126,7 +229,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_active_workflow_count{instance=~\".*:9464\"}",
+          "expr": "count(count by (workflow_id) (n8n_workflow_active))",
           "legendFormat": "Active Workflows",
           "refId": "A"
         }
@@ -204,12 +307,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_scaling_mode_queue_jobs_waiting{instance=~\".*:5678\"}",
+          "expr": "n8n_scaling_mode_queue_jobs_waiting",
           "legendFormat": "Waiting Jobs",
           "refId": "A"
         },
         {
-          "expr": "n8n_scaling_mode_queue_jobs_active{instance=~\".*:5678\"}",
+          "expr": "n8n_scaling_mode_queue_jobs_active",
           "legendFormat": "Active Jobs",
           "refId": "B"
         }
@@ -304,12 +407,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(n8n_scaling_mode_queue_jobs_completed{instance=~\".*:5678\"}[5m])",
+          "expr": "rate(n8n_scaling_mode_queue_jobs_completed[5m])",
           "legendFormat": "Completed",
           "refId": "A"
         },
         {
-          "expr": "rate(n8n_scaling_mode_queue_jobs_failed{instance=~\".*:5678\"}[5m])",
+          "expr": "rate(n8n_scaling_mode_queue_jobs_failed[5m])",
           "legendFormat": "Failed",
           "refId": "B"
         }
@@ -395,8 +498,8 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(n8n_process_cpu_seconds_total{instance=~\".*:9464\"}[5m]) * 100",
-          "legendFormat": "n8n Main CPU Usage",
+          "expr": "rate(process_cpu_seconds_total{job=~\"n8n.*\"}[5m]) * 100",
+          "legendFormat": "n8n CPU Usage",
           "refId": "A"
         }
       ],
@@ -472,14 +575,9 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_nodejs_heap_size_used_bytes{instance=~\".*:9464\"} / 1024 / 1024",
-          "legendFormat": "Heap Used (Main)",
+          "expr": "process_resident_memory_bytes{job=~\"n8n.*\"} / 1024 / 1024",
+          "legendFormat": "Memory Usage",
           "refId": "A"
-        },
-        {
-          "expr": "n8n_nodejs_heap_size_total_bytes{instance=~\".*:9464\"} / 1024 / 1024",
-          "legendFormat": "Heap Total (Main)",
-          "refId": "B"
         }
       ],
       "title": "n8n Memory Usage",
@@ -493,7 +591,7 @@
             "mode": "palette-classic"
           },
           "custom": {
-            "axisLabel": "Lag (seconds)",
+            "axisLabel": "Executions",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -528,18 +626,10 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.1
-              },
-              {
-                "color": "red",
-                "value": 0.5
               }
             ]
           },
-          "unit": "s"
+          "unit": "short"
         }
       },
       "gridPos": {
@@ -562,17 +652,17 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_nodejs_eventloop_lag_mean_seconds{instance=~\".*:9464\"}",
-          "legendFormat": "Mean (Main)",
+          "expr": "n8n_executions_total",
+          "legendFormat": "Total Executions",
           "refId": "A"
         },
         {
-          "expr": "n8n_nodejs_eventloop_lag_p99_seconds{instance=~\".*:9464\"}",
-          "legendFormat": "P99 (Main)",
+          "expr": "n8n_executions_running",
+          "legendFormat": "Running Executions",
           "refId": "B"
         }
       ],
-      "title": "Event Loop Lag",
+      "title": "Execution Metrics",
       "type": "timeseries"
     },
     {
@@ -659,277 +749,6 @@
       ],
       "title": "Database Connections",
       "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "Operations/sec",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "ops"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Rollbacks"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 28
-      },
-      "id": 9,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "rate(pg_stat_database_xact_commit{datname=\"n8n\"}[5m])",
-          "legendFormat": "Commits",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(pg_stat_database_xact_rollback{datname=\"n8n\"}[5m])",
-          "legendFormat": "Rollbacks",
-          "refId": "B"
-        }
-      ],
-      "title": "PostgreSQL Query Performance",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "CPU %",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 60
-              },
-              {
-                "color": "red",
-                "value": 85
-              }
-            ]
-          },
-          "unit": "percent"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 28
-      },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
-          "legendFormat": "CPU Usage %",
-          "refId": "A"
-        }
-      ],
-      "title": "System CPU Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "Memory %",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 36
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
-          "legendFormat": "Memory Usage %",
-          "refId": "A"
-        }
-      ],
-      "title": "System Memory Usage",
-      "type": "timeseries"
     }
   ],
   "refresh": "30s",
@@ -949,7 +768,7 @@
         "multi": true,
         "name": "n8n_instance",
         "options": [],
-        "query": "label_values(up{job=~\"n8n-.*\"}, instance)",
+        "query": "label_values(up{job=~\"n8n.*\"}, instance)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -970,7 +789,7 @@
         "multi": true,
         "name": "n8n_job",
         "options": [],
-        "query": "label_values(up{job=~\"n8n-.*\"}, job)",
+        "query": "label_values(up{job=~\"n8n.*\"}, job)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -988,8 +807,31 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "n8n Performance Monitoring",
-  "uid": "a95d1b93-441e-482b-9288-d622b807dd49",
+  "title": "n8n Performance Monitoring (Updated)",
+  "uid": "n8n-performance-updated",
   "version": 1,
   "weekStart": ""
 }
+EOF
+
+# Copy the updated dashboard to the Grafana dashboards directory
+cp /home/dev/2-monitors/dashboards/n8n-monitoring-final.json /home/dev/2-monitors/grafana/data/dashboards/
+
+# Restart Prometheus to apply the configuration changes
+echo "Restarting Prometheus to apply configuration changes..."
+docker restart monitors_prometheus
+
+# Restart Grafana to pick up the new dashboard
+echo "Restarting Grafana to apply dashboard changes..."
+docker restart grafana
+
+echo "Setup complete!"
+echo ""
+echo "To access the n8n dashboard:"
+echo "- Go to Grafana at http://localhost:3091"
+echo "- Login with your credentials"
+echo "- Navigate to the 'n8n Performance Monitoring (Updated)' dashboard"
+echo ""
+echo "Note: Prometheus has been updated with proper n8n metrics scraping configuration."
+echo "If metrics are still not showing, the n8n containers may need to be restarted to expose metrics on port 9464."
+EOF

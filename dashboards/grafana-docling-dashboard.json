@@ -1,7 +1,7 @@
 {
   "$schema": "https://grafana.com/jsonnet/schemas/v9/dashboard.json",
-  "uid": "docling-overview",
-  "title": "Docling Serve & MCP Overview",
+  "uid": "docling-overview-lite",
+  "title": "Docling Serve & MCP Overview (Lite)",
   "timezone": "browser",
   "tags": ["docling", "mcp", "observability"],
   "editable": true,

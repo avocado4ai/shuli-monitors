@@ -71,9 +71,14 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "sum(up{job=~\"n8n-(main|worker)\", instance=~\"$n8n_instance\"}) by (job)",
-          "legendFormat": "{{job}} Status",
+          "expr": "up{instance=~\"n8n:5678\"}",
+          "legendFormat": "n8n Main Status",
           "refId": "A"
+        },
+        {
+          "expr": "up{instance=~\"n8n_worker:5678\"}",
+          "legendFormat": "n8n Worker Status",
+          "refId": "B"
         }
       ],
       "title": "n8n Health Status",
@@ -126,196 +131,13 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_active_workflow_count{instance=~\".*:9464\"}",
-          "legendFormat": "Active Workflows",
+          "expr": "container_processes{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}",
+          "legendFormat": "Processes in {{container_label_com_docker_container_name}}",
           "refId": "A"
         }
       ],
-      "title": "Active Workflows",
+      "title": "n8n Container Processes",
       "type": "stat"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "Jobs",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 3,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "n8n_scaling_mode_queue_jobs_waiting{instance=~\".*:5678\"}",
-          "legendFormat": "Waiting Jobs",
-          "refId": "A"
-        },
-        {
-          "expr": "n8n_scaling_mode_queue_jobs_active{instance=~\".*:5678\"}",
-          "legendFormat": "Active Jobs",
-          "refId": "B"
-        }
-      ],
-      "title": "Queue Status",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "Jobs/sec",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "ops"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Failed"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 4
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "rate(n8n_scaling_mode_queue_jobs_completed{instance=~\".*:5678\"}[5m])",
-          "legendFormat": "Completed",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(n8n_scaling_mode_queue_jobs_failed{instance=~\".*:5678\"}[5m])",
-          "legendFormat": "Failed",
-          "refId": "B"
-        }
-      ],
-      "title": "Job Completion Rate",
-      "type": "timeseries"
     },
     {
       "datasource": "Prometheus",
@@ -379,9 +201,9 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 4
       },
-      "id": 5,
+      "id": 3,
       "options": {
         "legend": {
           "calcs": ["mean", "lastNotNull", "max"],
@@ -395,12 +217,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(n8n_process_cpu_seconds_total{instance=~\".*:9464\"}[5m]) * 100",
-          "legendFormat": "n8n Main CPU Usage",
+          "expr": "rate(container_cpu_usage_seconds_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) * 100",
+          "legendFormat": "CPU Usage - {{container_label_com_docker_container_name}}",
           "refId": "A"
         }
       ],
-      "title": "n8n Process CPU Usage",
+      "title": "n8n Container CPU Usage",
       "type": "timeseries"
     },
     {
@@ -456,9 +278,9 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 4
       },
-      "id": 6,
+      "id": 4,
       "options": {
         "legend": {
           "calcs": ["mean", "lastNotNull", "max"],
@@ -472,17 +294,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_nodejs_heap_size_used_bytes{instance=~\".*:9464\"} / 1024 / 1024",
-          "legendFormat": "Heap Used (Main)",
+          "expr": "container_memory_usage_bytes{container_label_com_docker_container_name=~\"n8n|n8n_worker\"} / 1024 / 1024",
+          "legendFormat": "Memory Usage - {{container_label_com_docker_container_name}}",
           "refId": "A"
-        },
-        {
-          "expr": "n8n_nodejs_heap_size_total_bytes{instance=~\".*:9464\"} / 1024 / 1024",
-          "legendFormat": "Heap Total (Main)",
-          "refId": "B"
         }
       ],
-      "title": "n8n Memory Usage",
+      "title": "n8n Container Memory Usage",
       "type": "timeseries"
     },
     {
@@ -493,7 +310,7 @@
             "mode": "palette-classic"
           },
           "custom": {
-            "axisLabel": "Lag (seconds)",
+            "axisLabel": "Network (KB/s)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -528,27 +345,19 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.1
-              },
-              {
-                "color": "red",
-                "value": 0.5
               }
             ]
           },
-          "unit": "s"
+          "unit": "KBs"
         }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 12
       },
-      "id": 7,
+      "id": 5,
       "options": {
         "legend": {
           "calcs": ["mean", "lastNotNull", "max"],
@@ -562,17 +371,99 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_nodejs_eventloop_lag_mean_seconds{instance=~\".*:9464\"}",
-          "legendFormat": "Mean (Main)",
+          "expr": "rate(container_network_receive_bytes_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) / 1024",
+          "legendFormat": "Network In - {{container_label_com_docker_container_name}}",
           "refId": "A"
         },
         {
-          "expr": "n8n_nodejs_eventloop_lag_p99_seconds{instance=~\".*:9464\"}",
-          "legendFormat": "P99 (Main)",
+          "expr": "rate(container_network_transmit_bytes_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) / 1024",
+          "legendFormat": "Network Out - {{container_label_com_docker_container_name}}",
           "refId": "B"
         }
       ],
-      "title": "Event Loop Lag",
+      "title": "n8n Container Network Traffic",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Disk (KB/s)",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "KBs"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "pluginVersion": "9.0.0",
+      "targets": [
+        {
+          "expr": "rate(container_fs_reads_bytes_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) / 1024",
+          "legendFormat": "Disk Reads - {{container_label_com_docker_container_name}}",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(container_fs_writes_bytes_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) / 1024",
+          "legendFormat": "Disk Writes - {{container_label_com_docker_container_name}}",
+          "refId": "B"
+        }
+      ],
+      "title": "n8n Container Disk I/O",
       "type": "timeseries"
     },
     {
@@ -635,10 +526,10 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 20
       },
-      "id": 8,
+      "id": 7,
       "options": {
         "legend": {
           "calcs": ["mean", "lastNotNull", "max"],
@@ -653,11 +544,11 @@
       "targets": [
         {
           "expr": "pg_stat_database_numbackends{datname=\"n8n\"}",
-          "legendFormat": "Active Connections",
+          "legendFormat": "Active DB Connections",
           "refId": "A"
         }
       ],
-      "title": "Database Connections",
+      "title": "n8n Database Connections",
       "type": "timeseries"
     },
     {
@@ -668,7 +559,7 @@
             "mode": "palette-classic"
           },
           "custom": {
-            "axisLabel": "Operations/sec",
+            "axisLabel": "Executions",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -706,33 +597,16 @@
               }
             ]
           },
-          "unit": "ops"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Rollbacks"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+          "unit": "short"
+        }
       },
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 28
+        "x": 12,
+        "y": 20
       },
-      "id": 9,
+      "id": 8,
       "options": {
         "legend": {
           "calcs": ["mean", "lastNotNull", "max"],
@@ -746,196 +620,19 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(pg_stat_database_xact_commit{datname=\"n8n\"}[5m])",
-          "legendFormat": "Commits",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(pg_stat_database_xact_rollback{datname=\"n8n\"}[5m])",
-          "legendFormat": "Rollbacks",
-          "refId": "B"
-        }
-      ],
-      "title": "PostgreSQL Query Performance",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "CPU %",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 60
-              },
-              {
-                "color": "red",
-                "value": 85
-              }
-            ]
-          },
-          "unit": "percent"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 28
-      },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
-          "legendFormat": "CPU Usage %",
+          "expr": "increase(http_requests_total{handler=~\"/rest/executions.*\", job=\"n8n\"}[5m])",
+          "legendFormat": "Execution Requests",
           "refId": "A"
         }
       ],
-      "title": "System CPU Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "Memory %",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 36
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
-          "legendFormat": "Memory Usage %",
-          "refId": "A"
-        }
-      ],
-      "title": "System Memory Usage",
+      "title": "n8n Execution API Requests",
       "type": "timeseries"
     }
   ],
   "refresh": "30s",
   "schemaVersion": 36,
   "style": "dark",
-  "tags": ["n8n", "monitoring", "performance"],
+  "tags": ["n8n", "monitoring", "performance", "containers"],
   "templating": {
     "list": [
       {
@@ -947,30 +644,9 @@
         "hide": 0,
         "includeAll": true,
         "multi": true,
-        "name": "n8n_instance",
+        "name": "n8n_container",
         "options": [],
-        "query": "label_values(up{job=~\"n8n-.*\"}, instance)",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "All"
-        },
-        "hide": 0,
-        "includeAll": true,
-        "multi": true,
-        "name": "n8n_job",
-        "options": [],
-        "query": "label_values(up{job=~\"n8n-.*\"}, job)",
+        "query": "label_values(container_cpu_usage_seconds_total{container_label_com_docker_container_name=~\"n8n.*\"}, container_label_com_docker_container_name)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -988,8 +664,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "n8n Performance Monitoring",
-  "uid": "a95d1b93-441e-482b-9288-d622b807dd49",
+  "title": "n8n Performance Monitoring (Using Container Metrics)",
+  "uid": "n8n-container-metrics",
   "version": 1,
   "weekStart": ""
 }

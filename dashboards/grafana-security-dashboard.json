@@ -1,458 +1,468 @@
 {
-  "dashboard": {
-    "id": null,
-    "title": "n8n Platform Security Monitoring",
-    "tags": ["n8n", "security", "sessions", "monitoring"],
-    "timezone": "browser",
-    "panels": [
-      {
-        "id": 1,
-        "title": "Failed Login Attempts",
-        "type": "timeseries",
-        "targets": [
-          {
-            "expr": "increase(node_systemd_unit_state{name=\"ssh.service\",state=\"failed\"}[5m])",
-            "legendFormat": "SSH Failed Logins",
-            "refId": "A"
-          },
-          {
-            "expr": "rate(apache_access_log_total{status=~\"4.*\"}[5m])",
-            "legendFormat": "HTTP 4xx Errors",
-            "refId": "B"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            },
-            "custom": {
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 10,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "vis": false
-              },
-              "lineInterpolation": "linear",
-              "lineWidth": 2,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "never",
-              "spanNulls": false,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "off"
-              }
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "yellow",
-                  "value": 5
-                },
-                {
-                  "color": "red",
-                  "value": 10
-                }
-              ]
-            },
-            "unit": "reqps"
-          },
-          "overrides": []
+  "id": null,
+  "title": "n8n Platform Security Monitoring",
+  "tags": [
+    "n8n",
+    "security",
+    "sessions",
+    "monitoring"
+  ],
+  "timezone": "",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Failed Login Attempts",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "increase(node_systemd_unit_state{name=\"ssh.service\",state=\"failed\"}[5m])",
+          "legendFormat": "SSH Failed Logins",
+          "refId": "A"
         },
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 0
-        },
-        "options": {
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom"
-          },
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          }
-        },
-        "alert": {
-          "conditions": [
-            {
-              "evaluator": {
-                "params": [5],
-                "type": "gt"
-              },
-              "operator": {
-                "type": "and"
-              },
-              "query": {
-                "model": {
-                  "expr": "increase(node_systemd_unit_state{name=\"ssh.service\",state=\"failed\"}[5m])",
-                  "refId": "A"
-                },
-                "params": ["A", "5m", "now"]
-              },
-              "reducer": {
-                "params": [],
-                "type": "avg"
-              },
-              "type": "query"
-            }
-          ],
-          "executionErrorState": "alerting",
-          "for": "5m",
-          "frequency": "10s",
-          "handler": 1,
-          "name": "High Failed Login Rate",
-          "noDataState": "no_data",
-          "notifications": []
+        {
+          "expr": "rate(apache_access_log_total{status=~\"4.*\"}[5m])",
+          "legendFormat": "HTTP 4xx Errors",
+          "refId": "B"
         }
-      },
-      {
-        "id": 2,
-        "title": "Unusual Session Patterns",
-        "type": "timeseries",
-        "targets": [
-          {
-            "expr": "rate(process_start_time_seconds[1h]) > 10",
-            "legendFormat": "High Process Creation Rate",
-            "refId": "A"
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
           },
-          {
-            "expr": "changes(pg_stat_database_numbackends[10m]) > 5",
-            "legendFormat": "Rapid DB Connection Changes",
-            "refId": "B"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
             },
-            "custom": {
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "drawStyle": "line",
-              "fillOpacity": 10,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "vis": false
-              },
-              "lineInterpolation": "linear",
-              "lineWidth": 2,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "auto",
-              "spanNulls": false,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "line"
-              }
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
             },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 1
-                }
-              ]
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
             },
-            "unit": "short"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 12,
-          "y": 0
-        },
-        "options": {
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom"
-          },
-          "tooltip": {
-            "mode": "single",
-            "sort": "none"
-          }
-        }
-      },
-      {
-        "id": 3,
-        "title": "Geographic Session Analysis",
-        "type": "geomap",
-        "targets": [
-          {
-            "expr": "apache_access_log_remote_addr",
-            "legendFormat": "Client IPs",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "custom": {
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "vis": false
-              }
-            },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
+            "thresholdsStyle": {
+              "mode": "off"
             }
           },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 8
-        },
-        "options": {
-          "basemap": {
-            "config": {},
-            "name": "Layer 0",
-            "type": "default"
-          },
-          "controls": {
-            "mouseWheelZoom": true,
-            "showAttribution": true,
-            "showDebug": false,
-            "showMeasure": false,
-            "showScale": false,
-            "showZoom": true
-          },
-          "layers": [
-            {
-              "config": {
-                "showLegend": true,
-                "style": {
-                  "color": {
-                    "field": "Value",
-                    "fixed": "dark-green"
-                  },
-                  "opacity": 0.4,
-                  "rotation": {
-                    "fixed": 0,
-                    "max": 360,
-                    "min": -360,
-                    "mode": "mod"
-                  },
-                  "size": {
-                    "field": "Value",
-                    "fixed": 5,
-                    "max": 15,
-                    "min": 2
-                  },
-                  "symbol": {
-                    "fixed": "img/icons/marker/circle.svg",
-                    "mode": "fixed"
-                  },
-                  "textConfig": {
-                    "fontSize": 12,
-                    "offsetX": 0,
-                    "offsetY": 0,
-                    "textAlign": "center",
-                    "textBaseline": "middle"
-                  }
-                }
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
               },
-              "location": {
-                "mode": "auto"
+              {
+                "color": "yellow",
+                "value": 5
               },
-              "name": "Layer 1",
-              "tooltip": true,
-              "type": "markers"
-            }
-          ],
-          "tooltip": {
-            "mode": "details"
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
           },
-          "view": {
-            "allLayers": true,
-            "id": "zero",
-            "lat": 0,
-            "lon": 0,
-            "zoom": 1
-          }
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
         }
       },
-      {
-        "id": 4,
-        "title": "Session Duration Anomalies",
-        "type": "stat",
-        "targets": [
+      "alert": {
+        "conditions": [
           {
-            "expr": "count((time() - process_start_time_seconds) > 86400)",
-            "legendFormat": "Sessions > 24 hours",
-            "refId": "A"
-          },
-          {
-            "expr": "count((time() - process_start_time_seconds) < 60)",
-            "legendFormat": "Sessions < 1 minute",
-            "refId": "B"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
+            "evaluator": {
+              "params": [
+                5
+              ],
+              "type": "gt"
             },
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "yellow",
-                  "value": 3
-                },
-                {
-                  "color": "red",
-                  "value": 10
-                }
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "model": {
+                "expr": "increase(node_systemd_unit_state{name=\"ssh.service\",state=\"failed\"}[5m])",
+                "refId": "A"
+              },
+              "params": [
+                "A",
+                "5m",
+                "now"
               ]
             },
-            "unit": "short"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 12,
-          "y": 8
-        },
-        "options": {
-          "colorMode": "background",
-          "graphMode": "area",
-          "justifyMode": "center",
-          "orientation": "horizontal",
-          "reduceOptions": {
-            "calcs": ["lastNotNull"],
-            "fields": "",
-            "values": false
-          },
-          "textMode": "auto"
-        }
-      },
-      {
-        "id": 5,
-        "title": "n8n Workflow Security Events",
-        "type": "logs",
-        "targets": [
-          {
-            "expr": "{job=\"n8n\"} |= \"error\" or \"failed\" or \"unauthorized\"",
-            "refId": "A"
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
           }
         ],
-        "gridPos": {
-          "h": 8,
-          "w": 24,
-          "x": 0,
-          "y": 16
+        "executionErrorState": "alerting",
+        "for": "5m",
+        "frequency": "10s",
+        "handler": 1,
+        "name": "High Failed Login Rate",
+        "noDataState": "no_data",
+        "notifications": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Unusual Session Patterns",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(process_start_time_seconds[1h]) > 10",
+          "legendFormat": "High Process Creation Rate",
+          "refId": "A"
         },
-        "options": {
-          "showTime": true,
-          "showLabels": false,
-          "showCommonLabels": false,
-          "wrapLogMessage": false,
-          "prettifyLogMessage": false,
-          "enableLogDetails": true,
-          "dedupStrategy": "none",
-          "sortOrder": "Descending"
+        {
+          "expr": "changes(pg_stat_database_numbackends[10m]) > 5",
+          "legendFormat": "Rapid DB Connection Changes",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
         }
       }
-    ],
-    "time": {
-      "from": "now-24h",
-      "to": "now"
     },
-    "timepicker": {},
-    "timezone": "",
-    "refresh": "1m",
-    "schemaVersion": 27,
-    "version": 1,
-    "links": [],
-    "templating": {
-      "list": []
-    },
-    "annotations": {
-      "list": [
+    {
+      "id": 3,
+      "title": "Geographic Session Analysis",
+      "type": "geomap",
+      "targets": [
         {
-          "builtIn": 1,
-          "datasource": "-- Grafana --",
-          "enable": true,
-          "hide": true,
-          "iconColor": "rgba(0, 211, 255, 1)",
-          "name": "Annotations & Alerts",
-          "type": "dashboard"
+          "expr": "apache_access_log_remote_addr",
+          "legendFormat": "Client IPs",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "basemap": {
+          "config": {},
+          "name": "Layer 0",
+          "type": "default"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showDebug": false,
+          "showMeasure": false,
+          "showScale": false,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "Value",
+                  "fixed": "dark-green"
+                },
+                "opacity": 0.4,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
+                "size": {
+                  "field": "Value",
+                  "fixed": 5,
+                  "max": 15,
+                  "min": 2
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            },
+            "location": {
+              "mode": "auto"
+            },
+            "name": "Layer 1",
+            "tooltip": true,
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "allLayers": true,
+          "id": "zero",
+          "lat": 0,
+          "lon": 0,
+          "zoom": 1
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Session Duration Anomalies",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "count((time() - process_start_time_seconds) > 86400)",
+          "legendFormat": "Sessions > 24 hours",
+          "refId": "A"
         },
         {
-          "datasource": "Prometheus",
-          "enable": true,
-          "expr": "changes(up[5m]) != 0",
-          "hide": false,
-          "iconColor": "red",
-          "name": "Service State Changes",
-          "showIn": 0,
-          "step": "5m",
-          "tagKeys": "service",
-          "tags": [],
-          "titleFormat": "Service {{instance}} state changed",
-          "type": "tags",
-          "useValueForTime": false
+          "expr": "count((time() - process_start_time_seconds) < 60)",
+          "legendFormat": "Sessions < 1 minute",
+          "refId": "B"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "title": "n8n Workflow Security Events",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "{job=\"n8n\"} |= \"error\" or \"failed\" or \"unauthorized\"",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": false,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
     }
+  ],
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "refresh": "1m",
+  "schemaVersion": 27,
+  "version": 1,
+  "links": [],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "changes(up[5m]) != 0",
+        "hide": false,
+        "iconColor": "red",
+        "name": "Service State Changes",
+        "showIn": 0,
+        "step": "5m",
+        "tagKeys": "service",
+        "tags": [],
+        "titleFormat": "Service {{instance}} state changed",
+        "type": "tags",
+        "useValueForTime": false
+      }
+    ]
   }
 }

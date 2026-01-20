@@ -1,3 +1,42 @@
+#!/bin/bash
+
+echo "Fixing n8n Performance Monitoring Dashboard..."
+
+# Check if Prometheus can reach the n8n metrics endpoint
+echo "Checking if Prometheus can scrape n8n metrics..."
+docker exec monitors_prometheus curl -s http://n8n:9464/metrics > /tmp/n8n_metrics.txt 2>/dev/null
+
+if [ $? -eq 0 ] && [ -s /tmp/n8n_metrics.txt ]; then
+    echo "✓ n8n metrics are accessible from Prometheus"
+    
+    # Extract available n8n metrics
+    echo "Available n8n metrics:"
+    grep "^n8n_" /tmp/n8n_metrics.txt | cut -d'{' -f1 | sort -u
+    
+else
+    echo "✗ n8n metrics are not accessible from Prometheus"
+    echo "Need to update n8n configuration to enable metrics properly"
+fi
+
+# Check if n8n worker has metrics enabled
+echo "Checking n8n worker metrics..."
+docker exec monitors_prometheus curl -s http://n8n_worker:9464/metrics > /tmp/n8n_worker_metrics.txt 2>/dev/null
+
+if [ $? -eq 0 ] && [ -s /tmp/n8n_worker_metrics.txt ]; then
+    echo "✓ n8n worker metrics are accessible from Prometheus"
+    grep "^n8n_" /tmp/n8n_worker_metrics.txt | cut -d'{' -f1 | sort -u
+else
+    echo "✗ n8n worker metrics are not accessible from Prometheus"
+fi
+
+# Update the dashboard with corrected metric queries
+echo "Updating dashboard with corrected metric queries..."
+
+# Backup the original dashboard
+cp /home/dev/2-monitors/dashboards/n8n-monitoring.json /home/dev/2-monitors/dashboards/n8n-monitoring.json.backup.$(date +%s)
+
+# Create an updated dashboard with corrected queries
+cat > /home/dev/2-monitors/dashboards/n8n-monitoring-fixed.json << 'EOF'
 {
   "annotations": {
     "list": [
@@ -71,9 +110,14 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "sum(up{job=~\"n8n-(main|worker)\", instance=~\"$n8n_instance\"}) by (job)",
-          "legendFormat": "{{job}} Status",
+          "expr": "up{job=\"n8n-main\"}",
+          "legendFormat": "n8n Main Status",
           "refId": "A"
+        },
+        {
+          "expr": "up{job=\"n8n-worker\"}",
+          "legendFormat": "n8n Worker Status",
+          "refId": "B"
         }
       ],
       "title": "n8n Health Status",
@@ -126,7 +170,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_active_workflow_count{instance=~\".*:9464\"}",
+          "expr": "n8n_active_workflow_count",
           "legendFormat": "Active Workflows",
           "refId": "A"
         }
@@ -204,12 +248,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_scaling_mode_queue_jobs_waiting{instance=~\".*:5678\"}",
+          "expr": "n8n_scaling_mode_queue_jobs_waiting",
           "legendFormat": "Waiting Jobs",
           "refId": "A"
         },
         {
-          "expr": "n8n_scaling_mode_queue_jobs_active{instance=~\".*:5678\"}",
+          "expr": "n8n_scaling_mode_queue_jobs_active",
           "legendFormat": "Active Jobs",
           "refId": "B"
         }
@@ -304,12 +348,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(n8n_scaling_mode_queue_jobs_completed{instance=~\".*:5678\"}[5m])",
+          "expr": "rate(n8n_scaling_mode_queue_jobs_completed[5m])",
           "legendFormat": "Completed",
           "refId": "A"
         },
         {
-          "expr": "rate(n8n_scaling_mode_queue_jobs_failed{instance=~\".*:5678\"}[5m])",
+          "expr": "rate(n8n_scaling_mode_queue_jobs_failed[5m])",
           "legendFormat": "Failed",
           "refId": "B"
         }
@@ -395,8 +439,8 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(n8n_process_cpu_seconds_total{instance=~\".*:9464\"}[5m]) * 100",
-          "legendFormat": "n8n Main CPU Usage",
+          "expr": "rate(process_cpu_seconds_total{job=~\"n8n-.*\"}[5m]) * 100",
+          "legendFormat": "n8n CPU Usage",
           "refId": "A"
         }
       ],
@@ -472,14 +516,9 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_nodejs_heap_size_used_bytes{instance=~\".*:9464\"} / 1024 / 1024",
-          "legendFormat": "Heap Used (Main)",
+          "expr": "process_resident_memory_bytes{job=~\"n8n-.*\"} / 1024 / 1024",
+          "legendFormat": "Memory Usage",
           "refId": "A"
-        },
-        {
-          "expr": "n8n_nodejs_heap_size_total_bytes{instance=~\".*:9464\"} / 1024 / 1024",
-          "legendFormat": "Heap Total (Main)",
-          "refId": "B"
         }
       ],
       "title": "n8n Memory Usage",
@@ -562,17 +601,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_nodejs_eventloop_lag_mean_seconds{instance=~\".*:9464\"}",
-          "legendFormat": "Mean (Main)",
+          "expr": "go_goroutines{job=~\"n8n-.*\"}",
+          "legendFormat": "Goroutines",
           "refId": "A"
-        },
-        {
-          "expr": "n8n_nodejs_eventloop_lag_p99_seconds{instance=~\".*:9464\"}",
-          "legendFormat": "P99 (Main)",
-          "refId": "B"
         }
       ],
-      "title": "Event Loop Lag",
+      "title": "Go Runtime Metrics",
       "type": "timeseries"
     },
     {
@@ -659,277 +693,6 @@
       ],
       "title": "Database Connections",
       "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "Operations/sec",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "ops"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Rollbacks"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 28
-      },
-      "id": 9,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "rate(pg_stat_database_xact_commit{datname=\"n8n\"}[5m])",
-          "legendFormat": "Commits",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(pg_stat_database_xact_rollback{datname=\"n8n\"}[5m])",
-          "legendFormat": "Rollbacks",
-          "refId": "B"
-        }
-      ],
-      "title": "PostgreSQL Query Performance",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "CPU %",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 60
-              },
-              {
-                "color": "red",
-                "value": 85
-              }
-            ]
-          },
-          "unit": "percent"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 28
-      },
-      "id": 10,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
-          "legendFormat": "CPU Usage %",
-          "refId": "A"
-        }
-      ],
-      "title": "System CPU Usage",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "Memory %",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
-            ]
-          },
-          "unit": "percent"
-        }
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 36
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "lastNotNull", "max"],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "9.0.0",
-      "targets": [
-        {
-          "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
-          "legendFormat": "Memory Usage %",
-          "refId": "A"
-        }
-      ],
-      "title": "System Memory Usage",
-      "type": "timeseries"
     }
   ],
   "refresh": "30s",
@@ -988,8 +751,31 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "n8n Performance Monitoring",
-  "uid": "a95d1b93-441e-482b-9288-d622b807dd49",
+  "title": "n8n Performance Monitoring (Fixed)",
+  "uid": "n8n-performance-fixed",
   "version": 1,
   "weekStart": ""
 }
+EOF
+
+echo "Updated dashboard saved as n8n-monitoring-fixed.json"
+
+# Copy the fixed dashboard to the Grafana dashboards directory
+cp /home/dev/2-monitors/dashboards/n8n-monitoring-fixed.json /home/dev/2-monitors/grafana/data/dashboards/
+
+echo "Dashboard copied to Grafana data directory."
+
+# Restart Grafana to pick up the new dashboard
+echo "Restarting Grafana to apply changes..."
+docker restart grafana
+
+echo "Setup complete!"
+echo ""
+echo "To access the n8n dashboard:"
+echo "- Go to Grafana at http://localhost:3091"
+echo "- Login with your credentials"
+echo "- Navigate to the 'n8n Performance Monitoring (Fixed)' dashboard"
+echo ""
+echo "Note: If metrics are still not showing, you may need to adjust the n8n container configuration"
+echo "to ensure metrics are properly exposed on the correct port."
+EOF
