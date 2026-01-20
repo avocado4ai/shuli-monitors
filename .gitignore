@@ -1,0 +1,26 @@
+# Environment variables
+.env
+
+# Docker volumes and temporary files
+**/node_modules/
+**/venv/
+**/__pycache__/
+**/*.pyc
+*.log
+.DS_Store
+Thumbs.db
+
+# Nested git repositories - we'll handle these separately
+coolify/
+gpu-hot/
+grafana/misc-grafana-dashboards/
+
+# Backup files
+*~
+*.bak
+*.tmp
+
+# Secrets and sensitive data
+**/secrets/
+**/credentials.json
+**/config.json

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://grafana.com/jsonnet/schemas/v9/dashboard.json",
+  "uid": "litellm-postgres",
+  "title": "LiteLLM Postgres Overview",
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "stat",
+      "id": 1,
+      "title": "LiteLLM Connections",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "eewyj5dtxw3r4a"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pg_stat_database_numbackends{datname=\"litellm\"}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["last"],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {"value": null, "color": "green"},
+              {"value": 50, "color": "orange"},
+              {"value": 80, "color": "red"}
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0}
+    },
+    {
+      "type": "graph",
+      "id": 2,
+      "title": "Backend Sessions (last 6h)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "eewyj5dtxw3r4a"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "pg_stat_activity_count{datname=\"litellm\",state=\"idle\",usename=\"llmproxy\"}"
+        },
+        {
+          "refId": "B",
+          "expr": "pg_stat_activity_count{datname=\"litellm\",state=\"idle\",usename=\"root\"}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0}
+    }
+  ]
+}

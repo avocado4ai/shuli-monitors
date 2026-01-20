@@ -1,0 +1,179 @@
+{
+  "id": null,
+  "uid": "n8n-queue",
+  "title": "n8n Queue Metrics",
+  "tags": ["n8n", "queue", "prometheus"],
+  "timezone": "browser",
+  "schemaVersion": 40,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Queue waiting jobs",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "n8n_scaling_mode_queue_jobs_waiting{role=~\"$n8n_role\"}",
+          "legendFormat": "waiting",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 20 },
+              { "color": "red", "value": 50 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Queue jobs by status",
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "n8n_scaling_mode_queue_jobs_active{role=~\"$n8n_role\"}",
+          "legendFormat": "active",
+          "refId": "A"
+        },
+        {
+          "expr": "n8n_scaling_mode_queue_jobs_failed{role=~\"$n8n_role\"}",
+          "legendFormat": "failed",
+          "refId": "B"
+        },
+        {
+          "expr": "n8n_scaling_mode_queue_jobs_completed{role=~\"$n8n_role\"}",
+          "legendFormat": "completed",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "HTTP latency (p95)",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(n8n_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 latency",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "n8n CPU usage",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 12 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "n8n memory RSS",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 12 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes - node_memory_MemFree_bytes",
+          "legendFormat": "RSS",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Queue failure rate (5m)",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(n8n_scaling_mode_queue_jobs_failed{role=~\"$n8n_role\"}[5m])) / (sum(rate(n8n_scaling_mode_queue_jobs_completed{role=~\"$n8n_role\"}[5m])) + sum(rate(n8n_scaling_mode_queue_jobs_failed{role=~\"$n8n_role\"}[5m])))",
+          "legendFormat": "failure rate",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.05 },
+              { "color": "red", "value": 0.1 }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "custom",
+        "name": "n8n_role",
+        "label": "Instance role",
+        "hide": 0,
+        "options": [
+          { "text": "main", "value": "main" },
+          { "text": "worker", "value": "worker" },
+          { "text": "all", "value": ".*" }
+        ],
+        "current": { "text": "main", "value": "main" }
+      },
+      {
+        "type": "interval",
+        "name": "interval",
+        "label": "Refresh interval",
+        "hide": 0,
+        "options": [
+          { "text": "1m", "value": "1m" },
+          { "text": "5m", "value": "5m" },
+          { "text": "10m", "value": "10m" }
+        ],
+        "current": { "text": "5m", "value": "5m" }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+ }
+}

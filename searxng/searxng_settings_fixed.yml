@@ -1,0 +1,90 @@
+use_default_settings: true
+
+server:
+  secret_key: "REPLACE_WITH_ENV_VAR"  # This will be overridden by SEARXNG_SECRET_KEY environment variable
+  limiter: true
+  image_proxy: true
+
+search:
+  formats:
+    - html
+    - json
+    - csv
+    - rss
+  safe_search: 0
+  default_lang: "en"  # Changed from "he-IL" to "en" for English
+
+ui:
+  default_locale: "en"  # Default UI locale is English
+
+engines:
+  # General search engines (English primary)
+  - name: duckduckgo
+    disabled: false
+  - name: bing
+    disabled: false
+  - name: google
+    disabled: true  # Disabled by default for privacy
+  - name: brave
+    disabled: false
+  - name: startpage
+    disabled: false
+  - name: qwant
+    disabled: false
+  
+  # Specialized English content
+  - name: wikipedia
+    disabled: false
+  - name: youtube
+    disabled: false
+  - name: reddit
+    disabled: false
+  - name: github
+    disabled: false
+  
+  # Media and images
+  - name: bing images
+    disabled: false
+  - name: bing news
+    disabled: false
+  - name: bing videos
+    disabled: false
+  - name: duckduckgo images
+    disabled: false
+  - name: duckduckgo videos
+    disabled: false
+  - name: duckduckgo news
+    disabled: false
+  - name: deviantart
+    disabled: false
+  - name: flickr
+    disabled: false
+  - name: openverse
+    disabled: false
+  
+  # Hebrew content support
+  - name: hebrew wikipedia
+    engine: wikipedia
+    shortcut: hewp
+    disabled: false
+    language: he
+  
+  # Additional engines
+  - name: currency
+    disabled: false
+  - name: openstreetmap
+    disabled: false
+  - name: docker hub
+    disabled: false
+  - name: stackoverflow
+    disabled: false
+  - name: arch linux wiki
+    disabled: false
+  - name: gentoo
+    disabled: false
+  - name: gitlab
+    disabled: false
+  - name: soundcloud
+    disabled: false
+  - name: bandcamp
+    disabled: false

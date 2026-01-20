@@ -1,0 +1,23 @@
+# services:
+#   nvidia-gpu-exporter:
+#     image: nvidia/dcgm-exporter:latest
+#     container_name: nvidia_gpu_exporter
+#     hostname: nvidia_gpu_exporter
+#     network_mode: host
+#     volumes:
+#       - /var/lib/nvidia-docker/volumes/nvidia_driver/latest:/usr/local/nvidia:ro
+#     environment:
+#       - NVIDIA_VISIBLE_DEVICES=all
+#     command: [ "--address=:9835", "--collectors=/etc/dcgm-exporter/default-counters.csv" ]
+#     restart: unless-stopped
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: all
+#               capabilities: [ gpu ]
+#     cap_add:
+#       - SYS_ADMIN
+
+

@@ -1,0 +1,132 @@
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    user: "${UID:-1000}:${GID:-1000}" # Use default values if UID/GID not set
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+      - /run
+      - /var/run
+    volumes:
+      - ./searxng_settings_fixed.yml:/etc/searxng/settings.yml # Fixed settings file with English as default
+      - searxng_cache:/var/lib/searxng # Named volume for cache/data
+      - /etc/localtime:/etc/localtime:ro # Sync host time
+    # Note: Using host networking mode, ports are exposed directly on the host
+    # The ports section is ignored when using network_mode: "host"
+    # Access the service on the port defined in SEARXNG_PORT environment variable
+    labels:
+      # Enable Traefik
+      - "traefik.enable=true"
+
+      # HTTP router
+      - "traefik.http.routers.searxng.rule=Host(`${TRAEFIK_HOST:-searxng.localhost}`)"
+      - "traefik.http.routers.searxng.entrypoints=web"
+
+      # Service definition - SearXNG runs on port 8080 internally in the container
+      - "traefik.http.services.searxng.loadbalancer.server.port=8080"
+      - "traefik.http.services.searxng.loadbalancer.server.scheme=http"
+      - "traefik.http.services.searxng.loadbalancer.healthcheck.path=/"
+      - "traefik.http.services.searxng.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.searxng.loadbalancer.healthcheck.timeout=10s"
+      - "traefik.http.services.searxng.loadbalancer.healthcheck.hostname=localhost"
+      # Traefik accesses the service via the Docker internal network on port 8080
+
+      # Middlewares
+      # Compression middleware
+      - "traefik.http.middlewares.searxng-compress.compress=true"
+
+      # Security headers middleware
+      - "traefik.http.middlewares.searxng-headers.headers.accessControlAllowMethods=GET, POST, OPTIONS"
+      - "traefik.http.middlewares.searxng-headers.headers.accessControlMaxAge=100"
+      - "traefik.http.middlewares.searxng-headers.headers.addVaryHeader=true"
+      - "traefik.http.middlewares.searxng-headers.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.http.middlewares.searxng-headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
+      - "traefik.http.middlewares.searxng-headers.headers.customResponseHeaders.X-Frame-Options=SAMEORIGIN"
+      - "traefik.http.middlewares.searxng-headers.headers.customResponseHeaders.X-XSS-Protection=1; mode=block"
+      - "traefik.http.middlewares.searxng-headers.headers.customResponseHeaders.X-Permitted-Cross-Domain-Policies=none"
+      - "traefik.http.middlewares.searxng-headers.headers.customResponseHeaders.Referrer-Policy=strict-origin-when-cross-origin"
+      - "traefik.http.middlewares.searxng-headers.headers.contentSecurityPolicy=default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self'; object-src 'none'; base-uri 'self';"
+      - "traefik.http.middlewares.searxng-headers.headers.featurePolicy=camera 'none'; geolocation 'none'; microphone 'none'; payment 'none'; usb 'none'"
+      - "traefik.http.middlewares.searxng-headers.headers.permissionsPolicy=geolocation=(self), microphone=(), camera=(), payment=(self)"
+
+      # Rate limiting middleware with improved configuration
+      - "traefik.http.middlewares.searxng-ratelimit.ratelimit.average=50"
+      - "traefik.http.middlewares.searxng-ratelimit.ratelimit.burst=100"
+      - "traefik.http.middlewares.searxng-ratelimit.ratelimit.period=30s"
+      - "traefik.http.middlewares.searxng-ratelimit.ratelimit.sourceCriterion.ipStrategy.excludedIPs=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
+      # Apply middlewares to the router
+      - "traefik.http.routers.searxng.middlewares=searxng-compress,searxng-headers,searxng-ratelimit"
+    environment:
+      # Base URL should match the actual access point
+      # When accessed from LAN, use the host IP instead of localhost
+      # This can be overridden by setting SEARXNG_BASE_URL in .env
+      # Using the port from the environment variable
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL:-http://0.0.0.0:${SEARXNG_PORT:-4300}/}
+      - SEARXNG_IMAGE_PROXY=${SEARXNG_IMAGE_PROXY:-true}
+      - SEARXNG_LIMETER=${SEARXNG_LIMETER:-true}
+      - SEARXNG_PUBLIC_INSTANCE=${SEARXNG_PUBLIC_INSTANCE:-false}
+      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY}
+    # Using bridge networking with port mapping to avoid conflicts
+    # Expose port to LAN (0.0.0.0 means accessible from any network interface)
+    # Port 4300 on the host is mapped to port 8080 in the container
+    ports:
+      - "0.0.0.0:${SEARXNG_PORT:-4300}:8080"
+    networks:
+      - searxng_network
+      - n8n_net  # For integration with n8n workflow automation
+      - traefik-public  # For Traefik reverse proxy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  # searxng-mcp:
+  #   build: ./searxng-mcp
+  #   container_name: searxng-mcp
+  #   environment:
+  #     - SEARXNG_BASE=http://searxng:8080
+  #   networks:
+  #     - searxng_network
+  #     - n8n_net
+  #   depends_on:
+  #     - searxng
+
+  # searxng-mcp-http:
+  #   build:
+  #     context: ./searxng-mcp
+  #     dockerfile: Dockerfile.http
+  #   container_name: searxng-mcp-http
+  #   ports:
+  #     - "5000:5000"
+  #   environment:
+  #     - SEARXNG_MCP_CONTAINER=searxng-mcp
+  #   networks:
+  #     - searxng_network
+  #     - n8n_net
+  #   depends_on:
+  #     - searxng-mcp
+  #   volumes:
+  #     - ./searxng-mcp/logs:/app/logs
+
+volumes:
+  searxng_cache:
+
+
+networks:
+  searxng_network:
+    driver: bridge
+  n8n_net:
+    # External network for n8n integration
+    external: true
+  traefik-public:
+    # External network for Traefik integration
+    external: true

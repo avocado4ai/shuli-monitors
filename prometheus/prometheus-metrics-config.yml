@@ -1,0 +1,183 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'n8n-platform'
+    environment: 'production'
+
+rule_files:
+  - "session_alerts.yml"
+  - "security_alerts.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: [ 'localhost:9090' ]
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Node system metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: [ 'node_exporter:9100' ]
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # PostgreSQL database metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: [ 'postgres_exporter:9187' ]
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # n8n application metrics
+  - job_name: 'n8n'
+    static_configs:
+      - targets: [ 'n8n:5678' ]
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Redis cache metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: [ 'redis_exporter:9121' ]
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Docker container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: [ 'cadvisor:8080' ]
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Traefik proxy metrics
+  - job_name: 'traefik'
+    static_configs:
+      - targets: [ 'traefik:8080' ]
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Grafana metrics
+  - job_name: 'grafana'
+    static_configs:
+      - targets: [ 'grafana:3000' ]
+    scrape_interval: 60s
+    metrics_path: /metrics
+
+  # OpenWebUI metrics (if available)
+  - job_name: 'openwebui'
+    static_configs:
+      - targets: [ 'openwebui:3030' ]
+    scrape_interval: 60s
+    metrics_path: /metrics
+    scrape_timeout: 30s
+
+  # MinIO object storage metrics
+  - job_name: 'minio'
+    static_configs:
+      - targets: [ 'minio:9000' ]
+    scrape_interval: 60s
+    metrics_path: /minio/v2/metrics/cluster
+    scheme: http
+
+  # LiteLLM proxy metrics
+  - job_name: 'litellm'
+    static_configs:
+      - targets: [ 'litellm:4000' ]
+    scrape_interval: 60s
+    metrics_path: /metrics
+    scrape_timeout: 30s
+
+  # Qdrant vector database metrics
+  - job_name: 'qdrant'
+    static_configs:
+      - targets: [ 'qdrant:6333' ]
+    scrape_interval: 60s
+    metrics_path: /metrics
+
+  # Ollama LLM server metrics (host service)
+  - job_name: 'ollama'
+    static_configs:
+      - targets: [ '192.168.1.118:11434' ]
+    scrape_interval: 60s
+    metrics_path: /metrics
+    scrape_timeout: 30s
+
+  # Apache web server metrics (if mod_prometheus enabled)
+  # local website avocado4ai.com
+  - job_name: 'apache'
+    static_configs:
+      - targets: [ '192.168.1.118:8080' ]
+    scrape_interval: 60s
+    metrics_path: /server-status?auto
+    params:
+      format: [ 'prometheus' ]
+
+  # # Mail server metrics (Postfix/Dovecot via node_exporter textfile)
+  # - job_name: 'mail'
+  #   static_configs:
+  #     - targets: [ '192.168.1.118:9100' ]
+  #   scrape_interval: 60s
+  #   metrics_path: /metrics
+  #   params:
+  #     collect[]: [ 'textfile' ]
+
+  # Custom n8n session metrics via pushgateway
+  - job_name: 'n8n-sessions'
+    static_configs:
+      - targets: [ 'pushgateway:9091' ]
+    scrape_interval: 30s
+    metrics_path: /metrics
+    honor_labels: true
+
+  # TAGA RAG system metrics
+  - job_name: 'taga-rag'
+    static_configs:
+      - targets: [ '192.168.1.118:5173' ]
+    scrape_interval: 60s
+    metrics_path: /metrics
+    scrape_timeout: 30s
+
+  # NocoDB database interface metrics
+  - job_name: 'nocodb'
+    static_configs:
+      - targets: [ '192.168.1.118:8180' ]
+    scrape_interval: 60s
+    metrics_path: /metrics
+    scrape_timeout: 30s
+
+  # Appsmith application builder metrics
+  - job_name: 'appsmith'
+    static_configs:
+      - targets: [ '192.168.1.118:8280' ]
+    scrape_interval: 60s
+    metrics_path: /metrics
+    scrape_timeout: 30s
+
+  # Blackbox exporter for external URL monitoring
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [ http_2xx ]
+    static_configs:
+      - targets:
+          - https://shuli.avocado4ai.com
+          - https://.avocado4ai.com
+          - http://192.168.1.118:5678
+          - http://192.168.1.118:3030
+          - http://192.168.1.118:3091
+    relabel_configs:
+      - source_labels: [ __address__ ]
+        target_label: __param_target
+      - source_labels: [ __param_target ]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox_exporter:9115

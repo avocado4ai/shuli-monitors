@@ -1,0 +1,27 @@
+
+services:
+  app:
+    container_name: tugtainer
+    image: quenary/tugtainer:latest
+    volumes:
+      - tugtainer_data:/tugtainer
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    networks:
+      - n8n_net
+    labels:
+      # Router configuration
+      - "traefik.http.routers.tugtainer.rule=Host(`tugtainer.local`)"
+      - "traefik.http.routers.tugtainer.entrypoints=web"
+
+      # Service configuration
+      - "traefik.http.services.tugtainer.loadbalancer.server.port=80"
+    ports:
+      - '9412:80'
+volumes:
+  tugtainer_data:
+networks:
+  # This network is created/owned by the upper-level compose
+  n8n_net:
+    external:
+      name: n8n_net

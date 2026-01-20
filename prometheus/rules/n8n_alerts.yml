@@ -1,0 +1,47 @@
+groups:
+  - name: n8n-queue
+    rules:
+      - alert: N8NInstanceDown
+        expr: up{job="n8n"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "n8n instance down"
+          description: "The n8n instance {{ $labels.instance }} has been down for 5 minutes."
+
+      - alert: N8NQueueDepthHigh
+        expr: n8n_scaling_mode_queue_jobs_waiting > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "n8n queue waiting jobs remain above 50"
+          description: "Queue depth {{ $value }} for over 10 minutes; investigate worker availability."
+
+      - alert: N8NQueueFailureSpike
+        expr: sum(rate(n8n_scaling_mode_queue_jobs_failed[5m])) / clamp_min(sum(rate(n8n_scaling_mode_queue_jobs_completed[5m])) + sum(rate(n8n_scaling_mode_queue_jobs_failed[5m])), 1) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "n8n queue failure rate > 5%"
+          description: "Failure rate exceeded 5% over the last 5m."
+
+      - alert: N8NLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(n8n_http_request_duration_seconds_bucket[5m])) by (le)) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "n8n p95 API latency > 5s"
+          description: "95th percentile latency has been above 5 seconds for 5 minutes; consider scaling main instances."
+      
+      - alert: N8NWorkflowsStuck
+        expr: n8n_workflow_executions_stuck > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "n8n has stuck workflows"
+          description: "{{ $value }} workflows have been stuck for more than 15 minutes."

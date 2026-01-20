@@ -1,0 +1,42 @@
+
+services:
+  # Dozzle - Real-time Docker Log Viewer
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    hostname: dozzle
+    restart: unless-stopped
+    networks:
+      - n8n_net
+    ports:
+      - "8801:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - DOZZLE_LEVEL=info
+      - DOZZLE_FILTER=status=running
+    labels:
+      # Enable Traefik
+      - "traefik.enable=true"
+      # Define the service with correct container port
+      - "traefik.http.services.dozzle-svc.loadbalancer.server.port=8080"
+      # Router for localhost
+      - "traefik.http.routers.dozzle-local.rule=Host(`dozzle.localhost`)"
+      - "traefik.http.routers.dozzle-local.entrypoints=web"
+      - "traefik.http.routers.dozzle-local.service=dozzle-svc"
+      # Router for production domain with TLS
+      - "traefik.http.routers.dozzle-production.rule=Host(`dozzle.avocado4ai.com`)"
+      - "traefik.http.routers.dozzle-production.entrypoints=websecure"
+      - "traefik.http.routers.dozzle-production.service=dozzle-svc"
+      - "traefik.http.routers.dozzle-production.tls=true"
+      # Network configuration
+      - "traefik.docker.network=n8n_net"
+
+volumes:
+  dozzle_data:
+
+networks:
+  # This network is created/owned by the upper-level compose
+  n8n_net:
+    external:
+      name: n8n_net

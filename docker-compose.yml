@@ -1,0 +1,204 @@
+name: monitors
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  dozzle_data:
+
+
+services:
+
+  gpu-hot:
+    build: ./gpu-hot
+    ports:
+      - "1312:1312"
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:1312/api/gpu-data" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  prometheus:
+    image: prom/prometheus
+    container_name: monitors_prometheus
+    hostname: prometheus
+    networks:
+      - n8n_net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/rules:/etc/prometheus/rules
+    ports:
+      - "9098:9090"
+    # Note: Prometheus runs on internal port 9090, exposed as 9098 for security
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    restart: always
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prometheus.rule=Host(`prometheus.local`)
+      - traefik.http.routers.prometheus.entrypoints=web
+      - traefik.http.routers.prometheus.service=prometheus
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+      - traefik.http.services.prometheus.loadbalancer.server.scheme=http
+      - traefik.docker.network=n8n_net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: monitors_cadvisor
+    hostname: cadvisor
+    networks:
+      - n8n_net
+    ports:
+      - "8769:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true
+    restart: always
+    command:
+      - '--housekeeping_interval=10s'
+      - '--docker_only=true'
+
+  nvidia_gpu_exporter:
+    image: nvidia/dcgm-exporter:latest
+    container_name: monitors_nvidia_gpu_exporter
+    hostname: nvidia_gpu_exporter
+    networks:
+      - n8n_net
+    ports:
+      - "9836:9835"
+    volumes:
+      - /var/lib/nvidia-docker/volumes/nvidia_driver/latest:/usr/local/nvidia:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: [ "--address=:9835", "--collectors=/etc/dcgm-exporter/default-counters.csv" ]
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    cap_add:
+      - SYS_ADMIN
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    hostname: grafana
+    networks:
+      - n8n_net
+    ports:
+      - "3091:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - /home/dev/2-tools/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFAN_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-http://192.168.1.118:9098}
+    restart: unless-stopped
+    labels:
+      # Enable the service in Traefik
+      - traefik.enable=true
+
+      # Router configuration for LAN access
+      - traefik.http.routers.grafana.rule=Host(`grafana.local`)
+      - traefik.http.routers.grafana.entrypoints=web
+      - traefik.http.routers.grafana.service=grafana
+
+      # Service configuration
+      - traefik.http.services.grafana.loadbalancer.server.port=3000 # Grafana's internal port
+      - traefik.http.services.grafana.loadbalancer.server.scheme=http
+
+      # Network configuration
+      - traefik.docker.network=n8n_net
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: monitors_node_exporter
+    hostname: node_exporter
+    networks:
+      - n8n_net
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.node-exporter.rule=Host(`node-exporter.local`)"
+      - "traefik.http.routers.node-exporter.entrypoints=web"
+      - "traefik.http.services.node-exporter.loadbalancer.server.port=9100"
+      - "traefik.docker.network=n8n_net"
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    hostname: dozzle
+    restart: unless-stopped
+    networks:
+      - n8n_net
+    ports:
+      - "8801:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - DOZZLE_LEVEL=info
+      - DOZZLE_FILTER=status=running
+    labels:
+      # Enable Traefik
+      - "traefik.enable=true"
+      # Define the service with correct container port
+      - "traefik.http.services.dozzle-svc.loadbalancer.server.port=8080"
+      # Router for local access
+      - "traefik.http.routers.dozzle-local.rule=Host(`dozzle.local`)"
+      - "traefik.http.routers.dozzle-local.entrypoints=web"
+      - "traefik.http.routers.dozzle-local.service=dozzle-svc"
+      # Network configuration
+      - "traefik.docker.network=n8n_net"
+
+networks:
+  # This network is created/owned by the upper-level compose
+  n8n_net:
+    external:
+      name: n8n_net
+  traefik-public:
+    external:
+      name: traefik-public
+  # Dozzle - Real-time Docker Log Viewer

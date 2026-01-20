@@ -1,0 +1,62 @@
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    hostname: grafana
+    networks:
+      - n8n_net
+    ports:
+      - "3091:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - PROMETHEUS_URL=${PROMETHEUS_URL:-http://192.168.1.118:9098}
+    restart: unless-stopped
+    labels:
+      # Enable the service in Traefik
+      - traefik.enable=true
+
+      # Router configuration for HTTPS
+      - traefik.http.routers.grafana.rule=Host(`grafana.avocado4ai.com`)
+      - traefik.http.routers.grafana.entrypoints=web,websecure
+      - traefik.http.routers.grafana.tls=true
+      - traefik.http.routers.grafana.tls.certresolver=letsencrypt  # Adjust if using different resolver
+      - traefik.http.routers.grafana.service=grafana
+
+      # Service configuration
+      - traefik.http.services.grafana.loadbalancer.server.port=3000  # Grafana's internal port
+      - traefik.http.services.grafana.loadbalancer.server.scheme=http
+
+      # Security headers middleware
+      - traefik.http.middlewares.grafana-security-headers.headers.customFrameOptionsValue=SAMEORIGIN
+      - traefik.http.middlewares.grafana-security-headers.headers.sslRedirect=true
+      - traefik.http.middlewares.grafana-security-headers.headers.STSSeconds=315360000
+      - traefik.http.middlewares.grafana-security-headers.headers.STSIncludeSubdomains=true
+      - traefik.http.middlewares.grafana-security-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.grafana-security-headers.headers.contentTypeNosniff=true
+
+      # Apply security headers
+      - traefik.http.routers.grafana.middlewares=grafana-security-headers@docker
+
+networks:
+  # This network is created/owned by the upper-level compose
+  n8n_net:
+    external:
+      name: n8n_net
+  traefik-public:
+    external:
+      name: traefik-public

@@ -1,0 +1,22 @@
+# Dockerfile for SearXNG MCP HTTP Wrapper
+FROM python:3.12-slim
+
+# Install required packages
+RUN pip install --no-cache-dir flask requests
+
+# Copy the wrapper code
+WORKDIR /app
+COPY server.py .
+COPY http_wrapper.py .
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Make the script executable
+RUN chmod +x http_wrapper.py
+
+# Set environment variable
+ENV SEARXNG_MCP_CONTAINER=searxng-mcp
+
+# Default command to start the HTTP wrapper
+CMD ["python3", "http_wrapper.py"]

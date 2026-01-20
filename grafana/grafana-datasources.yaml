@@ -1,0 +1,59 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: ${PROMETHEUS_URL:-http://prometheus:9090}
+    basicAuth: false
+    isDefault: true
+    version: 1
+    editable: true
+    jsonData:
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: 'jaeger'
+
+  - name: PostgreSQL Sessions
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: n8n
+    user: root
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: true
+    secureJsonData:
+      password: '029466372'
+    jsonData:
+      sslmode: 'disable'
+      postgresVersion: 1300
+      timescaledb: false
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      derivedFields:
+        - datasourceUid: 'jaeger'
+          matcherRegex: 'trace_id=(\w+)'
+          name: 'TraceID'
+          url: '$${__value.raw}'
+
+  - name: Node Exporter
+    type: prometheus
+    access: proxy
+    url: http://node-exporter:9100
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      httpMethod: GET
