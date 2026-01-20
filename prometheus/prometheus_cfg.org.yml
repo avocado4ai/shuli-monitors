@@ -37,14 +37,6 @@ scrape_configs:
     metrics_path: '/api/ps'
     scrape_interval: 30s
 
-  # MinIO metrics
-  - job_name: 'minio'
-    bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwcm9tZXRoZXVzIiwic3ViIjoiZGV2IiwiZXhwIjo0OTExNjc4NjkyfQ.VYB84XC3FI_G0tEqJcJEQ6su3avnm83qaRVCDB2CFK1qWXUSjKyTF78p_rYZoQZjhNSVhofQg5psIOmX6UZqoA
-    metrics_path: '/minio/v2/metrics/cluster'
-    scheme: http
-    static_configs:
-      - targets: ['minio:9000']
-    scrape_interval: 30s
 
   # Traefik metrics
   - job_name: 'traefik'

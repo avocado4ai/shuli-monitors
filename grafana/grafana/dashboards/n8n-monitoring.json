@@ -1,0 +1,419 @@
+{
+  "title": "n8n Performance Monitoring",
+  "tags": [
+    "n8n",
+    "monitoring",
+    "performance"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "n8n Health Status",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "up{job=\"n8n\"}",
+          "legendFormat": "n8n Status",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                },
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 1,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Workflow Execution Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(n8n_executions_total[5m])",
+          "legendFormat": "Executions/sec",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 6,
+        "y": 0
+      },
+      "yaxes": [
+        {
+          "format": "ops",
+          "label": "Executions/sec"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Success vs Error Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(n8n_executions_total{status=\"success\"}[5m])",
+          "legendFormat": "Success",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(n8n_executions_total{status=\"error\"}[5m])",
+          "legendFormat": "Errors",
+          "refId": "B"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "seriesOverrides": [
+        {
+          "alias": "Errors",
+          "color": "red"
+        },
+        {
+          "alias": "Success",
+          "color": "green"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "n8n Container CPU Usage",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{name=\"n8n\"}[5m]) * 100",
+          "legendFormat": "n8n main",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{name=\"n8n_worker\"}[5m]) * 100",
+          "legendFormat": "n8n worker",
+          "refId": "B"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "yaxes": [
+        {
+          "format": "percent",
+          "label": "CPU %"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "n8n Container Memory Usage",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "container_memory_usage_bytes{name=\"n8n\"} / 1024 / 1024",
+          "legendFormat": "n8n main (MB)",
+          "refId": "A"
+        },
+        {
+          "expr": "container_memory_usage_bytes{name=\"n8n_worker\"} / 1024 / 1024",
+          "legendFormat": "n8n worker (MB)",
+          "refId": "B"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "yaxes": [
+        {
+          "format": "mbytes",
+          "label": "Memory (MB)"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Queue Length",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "n8n_queue_jobs_waiting",
+          "legendFormat": "Waiting Jobs",
+          "refId": "A"
+        },
+        {
+          "expr": "n8n_queue_jobs_active",
+          "legendFormat": "Active Jobs",
+          "refId": "B"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "Jobs"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Database Connections",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "pg_stat_database_numbackends{datname=\"n8n\"}",
+          "legendFormat": "Active Connections",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "Connections",
+          "max": 50
+        }
+      ],
+      "alert": {
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [
+                40
+              ],
+              "type": "gt"
+            },
+            "operator": {
+              "type": "and"
+            },
+            "query": {
+              "params": [
+                "A",
+                "5m",
+                "now"
+              ]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ],
+        "executionErrorState": "alerting",
+        "for": "5m",
+        "frequency": "1m",
+        "handler": 1,
+        "message": "n8n database connections are high (>40/50)",
+        "name": "High Database Connections",
+        "noDataState": "no_data",
+        "notifications": []
+      }
+    },
+    {
+      "id": 8,
+      "title": "PostgreSQL Query Performance",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_database_xact_commit{datname=\"n8n\"}[5m])",
+          "legendFormat": "Commits/sec",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(pg_stat_database_xact_rollback{datname=\"n8n\"}[5m])",
+          "legendFormat": "Rollbacks/sec",
+          "refId": "B"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "yaxes": [
+        {
+          "format": "ops",
+          "label": "Operations/sec"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Success Rate (%)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "100 * (rate(n8n_executions_total{status=\"success\"}[5m]) / rate(n8n_executions_total[5m]))",
+          "legendFormat": "Success Rate",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 4
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 50,
+                "color": "yellow"
+              },
+              {
+                "value": 80,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "System CPU Usage",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "CPU Usage %",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "yaxes": [
+        {
+          "format": "percent",
+          "label": "CPU %",
+          "max": 100
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "System Memory Usage",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
+          "legendFormat": "Memory Usage %",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "yaxes": [
+        {
+          "format": "percent",
+          "label": "Memory %",
+          "max": 100
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 27,
+  "style": "dark",
+  "templating": {
+    "list": []
+  },
+  "version": 1
+}

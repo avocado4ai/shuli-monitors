@@ -24,3 +24,8 @@ grafana/misc-grafana-dashboards/
 **/secrets/
 **/credentials.json
 **/config.json
+
+# Database files
+*.db
+*.db.backup
+grafana/data/

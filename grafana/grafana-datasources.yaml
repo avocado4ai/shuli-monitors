@@ -1,21 +1,26 @@
 apiVersion: 1
 
+# Datasources based on /home/dev/2-tools/.prometheus/prometheus_cfg.yml
+# Prometheus scrapes: postgres_exporter, node-exporter, nvidia-gpu, ollama, traefik, n8n, cadvisor
+
 datasources:
+  # Main Prometheus - collects all metrics
   - name: Prometheus
+    uid: prometheus
     type: prometheus
     access: proxy
-    url: ${PROMETHEUS_URL:-http://prometheus:9090}
+    url: http://monitors_prometheus:9090
     basicAuth: false
     isDefault: true
     version: 1
     editable: true
     jsonData:
       httpMethod: POST
-      exemplarTraceIdDestinations:
-        - name: trace_id
-          datasourceUid: 'jaeger'
+      timeInterval: "15s"
 
-  - name: PostgreSQL Sessions
+  # PostgreSQL - Direct database access for n8n data queries
+  - name: PostgreSQL
+    uid: postgresql
     type: postgres
     access: proxy
     url: postgres:5432
@@ -29,31 +34,5 @@ datasources:
       password: '029466372'
     jsonData:
       sslmode: 'disable'
-      postgresVersion: 1300
+      postgresVersion: 1400
       timescaledb: false
-
-  - name: Loki
-    type: loki
-    access: proxy
-    url: http://loki:3100
-    basicAuth: false
-    isDefault: false
-    version: 1
-    editable: true
-    jsonData:
-      derivedFields:
-        - datasourceUid: 'jaeger'
-          matcherRegex: 'trace_id=(\w+)'
-          name: 'TraceID'
-          url: '$${__value.raw}'
-
-  - name: Node Exporter
-    type: prometheus
-    access: proxy
-    url: http://node-exporter:9100
-    basicAuth: false
-    isDefault: false
-    version: 1
-    editable: true
-    jsonData:
-      httpMethod: GET

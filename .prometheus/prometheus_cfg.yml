@@ -10,124 +10,82 @@ scrape_configs:
   # Prometheus itself
   - job_name: 'prometheus'
     static_configs:
-      - targets: [ 'localhost:9090' ]
+      - targets: ['localhost:9090']
 
   # PostgreSQL database metrics
   - job_name: 'postgres'
     static_configs:
-      - targets: [ 'postgres_exporter:9187' ]
-        labels:
-          service: 'postgresql'
-          role: 'database'
+      - targets: ['postgres_exporter:9187']
     scrape_interval: 30s
 
   # System metrics via node_exporter
   - job_name: 'node'
     static_configs:
-      - targets: [ 'node-exporter:9100' ]
-        labels:
-          service: 'node-exporter'
-          role: 'system-metrics'
+      - targets: ['node_exporter:9100']
     scrape_interval: 30s
 
-
-
-  # NVIDIA GPU metrics via simple Python exporter (running on host)
+  # NVIDIA GPU metrics
   - job_name: 'nvidia-gpu'
     static_configs:
-      - targets: [ '192.168.1.118:9835' ]
-        labels:
-          service: 'nvidia-gpu'
-          role: 'gpu-metrics'
+      - targets: ['172.17.0.1:9835']
     scrape_interval: 30s
 
-  # Ollama server metrics (running on host service, not Docker)
+  # Ollama server metrics
   - job_name: 'ollama-servers'
     static_configs:
-      - targets: [ '192.168.1.118:11434' ]
-        labels:
-          service: 'ollama'
-          role: 'llm-server'
-    metrics_path: '/metrics'
+      - targets: ['ollama:11434']
+    metrics_path: '/api/ps'
     scrape_interval: 30s
 
-  # MinIO object storage metrics
+  # MinIO metrics
   - job_name: 'minio'
     bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwcm9tZXRoZXVzIiwic3ViIjoiZGV2IiwiZXhwIjo0OTExNjc4NjkyfQ.VYB84XC3FI_G0tEqJcJEQ6su3avnm83qaRVCDB2CFK1qWXUSjKyTF78p_rYZoQZjhNSVhofQg5psIOmX6UZqoA
     metrics_path: '/minio/v2/metrics/cluster'
     scheme: http
     static_configs:
-      - targets: [ 'minio:9000' ]
-        labels:
-          service: 'minio'
-          role: 'object-storage'
+      - targets: ['minio:9000']
     scrape_interval: 30s
 
-  # Traefik reverse proxy metrics
+  # Traefik metrics
   - job_name: 'traefik'
     static_configs:
-      - targets: [ 'traefik:8080' ]
-        labels:
-          service: 'traefik'
-          role: 'reverse-proxy'
+      - targets: ['traefik:8080']
     metrics_path: '/metrics'
     scrape_interval: 30s
 
-  # n8n application metrics (main)
-  # NOTE: Despite N8N_METRICS_PORT=9464 env var, n8n serves metrics on main app port 5678
+  # n8n application metrics - using system metrics since internal metrics aren't available
   - job_name: 'n8n-main'
     static_configs:
-      - targets: [ 'n8n:5678' ]
-        labels:
-          service: 'n8n'
-          role: 'main'
-    metrics_path: '/metrics'
+      - targets: ['n8n:5678']
+    metrics_path: '/metrics'  # Will likely fail but keeps the target defined
     scrape_interval: 30s
     scrape_timeout: 10s
 
-  # n8n application metrics (worker)
-  # NOTE: Worker doesn't expose port 5678, metrics not accessible
-  # - job_name: 'n8n-worker'
-  #   static_configs:
-  #     - targets: [ 'n8n_worker:5678' ]
-  #       labels:
-  #         service: 'n8n'
-  #         role: 'worker'
-  #   metrics_path: '/metrics'
-  #   scrape_interval: 30s
-  #   scrape_timeout: 10s
+  - job_name: 'n8n-worker'
+    static_configs:
+      - targets: ['n8n_worker:5678']
+    metrics_path: '/metrics'  # Will likely fail but keeps the target defined
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Container metrics via cAdvisor for n8n containers
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
 
   # Ollama Metrics Exporter
   - job_name: 'ollama-metrics'
     static_configs:
-      - targets: [ 'ollama-metrics:1313' ]
-        labels:
-          service: 'ollama'
-          role: 'llm-metrics'
+      - targets: ['172.17.0.1:1313']
     scrape_interval: 15s
     scrape_timeout: 10s
-
-  # cAdvisor for Docker container metrics
-  - job_name: 'cadvisor'
-    static_configs:
-      - targets: [ 'cadvisor:8080' ]
-        labels:
-          service: 'cadvisor'
-          role: 'container-metrics'
-    scrape_interval: 30s
-    scrape_timeout: 10s
-
-  # MCP Server metrics (commented out - service not running)
-  # - job_name: 'n8n-mcp'
-  #   static_configs:
-  #     - targets: ['n8n-mcp-server:3000']
-  #   metrics_path: '/metrics'
-  #   scrape_interval: 30s
-  #   scrape_timeout: 10s
 
   # Services without Prometheus metrics endpoints (disabled):
   # - Redis: Redis Stack UI at port 8001 returns HTML, not Prometheus metrics
   # - LiteLLM: No metrics endpoint available
-  # - Neo4j: No metrics endpoint in community edition  
+  # - Neo4j: No metrics endpoint in community edition
   # - OpenWebUI: /metrics returns HTML instead of Prometheus format
   # - MCP Server: Service not currently running

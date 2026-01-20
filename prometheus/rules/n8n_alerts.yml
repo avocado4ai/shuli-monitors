@@ -2,7 +2,7 @@ groups:
   - name: n8n-queue
     rules:
       - alert: N8NInstanceDown
-        expr: up{job="n8n"} == 0
+        expr: up{job=~"n8n-(main|worker)"} == 0
         for: 5m
         labels:
           severity: critical
@@ -11,7 +11,7 @@ groups:
           description: "The n8n instance {{ $labels.instance }} has been down for 5 minutes."
 
       - alert: N8NQueueDepthHigh
-        expr: n8n_scaling_mode_queue_jobs_waiting > 50
+        expr: n8n_scaling_mode_queue_jobs_waiting{instance=~".*:5678"} > 50
         for: 10m
         labels:
           severity: warning
@@ -20,7 +20,7 @@ groups:
           description: "Queue depth {{ $value }} for over 10 minutes; investigate worker availability."
 
       - alert: N8NQueueFailureSpike
-        expr: sum(rate(n8n_scaling_mode_queue_jobs_failed[5m])) / clamp_min(sum(rate(n8n_scaling_mode_queue_jobs_completed[5m])) + sum(rate(n8n_scaling_mode_queue_jobs_failed[5m])), 1) > 0.05
+        expr: sum(rate(n8n_scaling_mode_queue_jobs_failed{instance=~".*:5678"}[5m])) / clamp_min(sum(rate(n8n_scaling_mode_queue_jobs_completed{instance=~".*:5678"}[5m])) + sum(rate(n8n_scaling_mode_queue_jobs_failed{instance=~".*:5678"}[5m])), 1) > 0.05
         for: 5m
         labels:
           severity: warning
@@ -29,7 +29,7 @@ groups:
           description: "Failure rate exceeded 5% over the last 5m."
 
       - alert: N8NLatencyHigh
-        expr: histogram_quantile(0.95, sum(rate(n8n_http_request_duration_seconds_bucket[5m])) by (le)) > 5
+        expr: histogram_quantile(0.95, sum(rate(n8n_http_request_duration_seconds_bucket{instance=~".*:9464"}[5m])) by (le)) > 5
         for: 5m
         labels:
           severity: warning
@@ -38,7 +38,7 @@ groups:
           description: "95th percentile latency has been above 5 seconds for 5 minutes; consider scaling main instances."
       
       - alert: N8NWorkflowsStuck
-        expr: n8n_workflow_executions_stuck > 0
+        expr: n8n_workflow_executions_stuck{instance=~".*:9464"} > 0
         for: 15m
         labels:
           severity: warning
