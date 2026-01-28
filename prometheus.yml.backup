@@ -29,7 +29,7 @@ scrape_configs:
           service: 'node-exporter'
           role: 'system-metrics'
     scrape_interval: 30s
-
+ 
   # MinIO object storage metrics
   - job_name: 'minio'
     bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwcm9tZXRoZXVzIiwic3ViIjoiZGV2IiwiZXhwIjo0OTExNjc4NjkyfQ.VYB84XC3FI_G0tEqJcJEQ6su3avnm83qaRVCDB2CFK1qWXUSjKyTF78p_rYZoQZjhNSVhofQg5psIOmX6UZqoA
@@ -42,10 +42,11 @@ scrape_configs:
           role: 'object-storage'
     scrape_interval: 30s
 
+
   # NVIDIA GPU metrics via unified exporter (DCGM-based)
   - job_name: 'nvidia-gpu'
     static_configs:
-      - targets: [ 'nvidia_gpu_exporter:9835' ]
+      - targets: [ 'monitors_nvidia_gpu_exporter:9835' ]
         labels:
           service: 'nvidia-gpu'
           role: 'gpu-metrics'
@@ -60,7 +61,7 @@ scrape_configs:
   # Traefik reverse proxy metrics
   - job_name: 'traefik'
     static_configs:
-      - targets: [ 'traefik:8883' ]
+      - targets: [ 'traefik:8080' ]
         labels:
           service: 'traefik'
           role: 'reverse-proxy'
@@ -68,27 +69,29 @@ scrape_configs:
     scrape_interval: 30s
 
   # n8n application metrics (main)
-  - job_name: 'n8n-main'
-    static_configs:
-      - targets: [ 'n8n:5678' ]
-        labels:
-          service: 'n8n'
-          role: 'main'
-    metrics_path: '/metrics'
-    scrape_interval: 30s
-    scrape_timeout: 10s
+  # NOTE: n8n container does not appear to be exposing metrics on port 9464 despite environment variables
+  # Commenting out this job until metrics are properly configured in the n8n container
+  # - job_name: 'n8n-main'
+  #   static_configs:
+  #     - targets: [ 'n8n:9464' ]
+  #       labels:
+  #         service: 'n8n'
+  #         role: 'main'
+  #   metrics_path: '/metrics'
+  #   scrape_interval: 30s
+  #   scrape_timeout: 10s
 
-  # n8n application metrics (worker) - DISABLED: n8n worker does not expose metrics endpoint
-  #  # - job_name: 'n8n-worker'
-  #  - job_name: 'n8n-worker'
-  #    static_configs:
-  #      - targets: [ 'n8n_worker:5678' ]
-  #        labels:
-  #          service: 'n8n'
-  #          role: 'worker'
-  #    metrics_path: '/metrics'
-  #    scrape_interval: 30s
-  #    scrape_timeout: 10s
+  # n8n application metrics (worker)
+  # NOTE: n8n_worker container does not have metrics enabled, commenting out this job
+  # - job_name: 'n8n-worker'
+  #   static_configs:
+  #     - targets: [ 'n8n_worker:5678' ]
+  #       labels:
+  #         service: 'n8n'
+  #         role: 'worker'
+  #   metrics_path: '/metrics'
+  #   scrape_interval: 30s
+  #   scrape_timeout: 10s
 
   # Ollama Metrics Exporter
   - job_name: 'ollama-metrics'
@@ -109,6 +112,7 @@ scrape_configs:
           role: 'container-metrics'
     scrape_interval: 30s
     scrape_timeout: 10s
+
   # MCP Server metrics (commented out - service not running)
   # - job_name: 'n8n-mcp'
   #   static_configs:

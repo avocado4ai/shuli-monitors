@@ -1,0 +1,25 @@
+services:
+  ollama-metrics:
+    build: .
+    container_name: ollama-metrics
+    restart: unless-stopped
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - n8n_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ollama-metrics.rule=Host(`ollama-metrics.avocado4ai.com`)"
+      - "traefik.http.routers.ollama-metrics.entrypoints=websecure"
+      - "traefik.http.routers.ollama-metrics.tls=true"
+      - "traefik.http.routers.ollama-metrics.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ollama-metrics.service=ollama-metrics"
+      - "traefik.http.services.ollama-metrics.loadbalancer.server.port=1313"
+      - "traefik.http.services.ollama-metrics.loadbalancer.server.scheme=http"
+      - "traefik.docker.network=n8n_net"
+
+networks:
+  n8n_net:
+    external: true

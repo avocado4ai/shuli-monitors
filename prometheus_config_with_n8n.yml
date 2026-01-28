@@ -78,17 +78,16 @@ scrape_configs:
     scrape_interval: 30s
     scrape_timeout: 10s
 
-  # n8n application metrics (worker) - DISABLED: n8n worker does not expose metrics endpoint
-  #  # - job_name: 'n8n-worker'
-  #  - job_name: 'n8n-worker'
-  #    static_configs:
-  #      - targets: [ 'n8n_worker:5678' ]
-  #        labels:
-  #          service: 'n8n'
-  #          role: 'worker'
-  #    metrics_path: '/metrics'
-  #    scrape_interval: 30s
-  #    scrape_timeout: 10s
+  # n8n application metrics (worker)
+  - job_name: 'n8n-worker'
+    static_configs:
+      - targets: [ 'n8n_worker:9464' ]
+        labels:
+          service: 'n8n'
+          role: 'worker'
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
 
   # Ollama Metrics Exporter
   - job_name: 'ollama-metrics'

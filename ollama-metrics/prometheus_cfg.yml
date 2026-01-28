@@ -1,0 +1,94 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/disk_alerts.yml"
+  - "rules/n8n_alerts.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # PostgreSQL database metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+    scrape_interval: 30s
+
+  # System metrics via node_exporter
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node_exporter:9100']
+    scrape_interval: 30s
+
+  # NVIDIA GPU metrics
+  - job_name: 'nvidia-gpu'
+    static_configs:
+      - targets: ['172.17.0.1:9835']
+    scrape_interval: 30s
+
+  # Ollama server metrics
+  - job_name: 'ollama-servers'
+    static_configs:
+      - targets: ['ollama:11434']
+    metrics_path: '/api/ps'
+    scrape_interval: 30s
+
+  # MinIO metrics
+  - job_name: 'minio'
+    bearer_token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJwcm9tZXRoZXVzIiwic3ViIjoiZGV2IiwiZXhwIjo0OTExNjc4NjkyfQ.VYB84XC3FI_G0tEqJcJEQ6su3avnm83qaRVCDB2CFK1qWXUSjKyTF78p_rYZoQZjhNSVhofQg5psIOmX6UZqoA
+    metrics_path: '/minio/v2/metrics/cluster'
+    scheme: http
+    static_configs:
+      - targets: ['minio:9000']
+    scrape_interval: 30s
+
+  # Traefik metrics
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # n8n application metrics (main)
+  - job_name: 'n8n-main'
+    static_configs:
+      - targets: ['n8n:9464']
+        labels:
+          role: 'main'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # n8n application metrics (worker)
+  - job_name: 'n8n-worker'
+    static_configs:
+      - targets: ['n8n_worker:9464']
+        labels:
+          role: 'worker'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Ollama Metrics Exporter
+  - job_name: 'ollama-metrics'
+    static_configs:
+      - targets: ['ollama-metrics:1313']
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # MCP Server metrics (commented out - service not running)
+  # - job_name: 'n8n-mcp'
+  #   static_configs:
+  #     - targets: ['n8n-mcp-server:3000']
+  #   metrics_path: '/metrics'
+  #   scrape_interval: 30s
+  #   scrape_timeout: 10s
+
+  # Services without Prometheus metrics endpoints (disabled):
+  # - Redis: Redis Stack UI at port 8001 returns HTML, not Prometheus metrics
+  # - LiteLLM: No metrics endpoint available
+  # - Neo4j: No metrics endpoint in community edition  
+  # - OpenWebUI: /metrics returns HTML instead of Prometheus format
+  # - MCP Server: Service not currently running
