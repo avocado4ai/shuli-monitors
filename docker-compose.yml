@@ -4,6 +4,7 @@ volumes:
   prometheus_data:
   dozzle_data:
 
+
 services:
 
   gpu-hot:
@@ -30,7 +31,7 @@ services:
 
   prometheus:
     image: prom/prometheus
-    container_name: monitors_prometheus
+    container_name: prometheus
     hostname: prometheus
     networks:
       - n8n_net
@@ -60,7 +61,7 @@ services:
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
-    container_name: monitors_cadvisor
+    container_name: cadvisor
     hostname: cadvisor
     networks:
       - n8n_net
@@ -83,7 +84,7 @@ services:
   # NVIDIA GPU Exporter - provides comprehensive GPU metrics via DCGM (merged from dcgm and smi exporters)
   nvidia_gpu_exporter:
     image: nvidia/dcgm-exporter:latest
-    container_name: monitors_nvidia_gpu_exporter
+    container_name: nvidia_gpu_exporter
     hostname: nvidia_gpu_exporter
     networks:
       - n8n_net
@@ -109,7 +110,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     hostname: grafana
-    user: "472:472"  # Grafana user ID to match expected permissions
+    user: "472:472" # Grafana user ID to match expected permissions
     networks:
       - n8n_net
     ports:
@@ -130,11 +131,11 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=false
       - GF_AUTH_LOGIN_REMEMBER_DAYS=7
       - GF_SECURITY_COOKIE_SAMESITE=strict
-      - GF_SECURITY_COOKIE_SECURE=false  # Set to true if using HTTPS
+      - GF_SECURITY_COOKIE_SECURE=false # Set to true if using HTTPS
       - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:%(http_port)s/
       - GF_SERVER_SERVE_FROM_SUB_PATH=false
       # Configure authentication to handle WebSocket connections properly
-      - GF_AUTH_OAUTH_AUTO_LOGIN=false
+      - GF_AUTH_OAUTH_AUTO_LOGIN=true
       - GF_SECURITY_INVALID_LOGIN_ATTEMPTS=5
       - GF_SECURITY_LOGIN_REMEMBER_DAYS=7
       # Configure session settings to handle token rotation properly
@@ -151,7 +152,7 @@ services:
       - traefik.http.routers.grafana.service=grafana
 
       # Service configuration
-      - traefik.http.services.grafana.loadbalancer.server.port=3000 # Grafana's internal port
+      - traefik.http.services.grafana.loadbalancer.server.port=8801 # Grafana's internal port
       - traefik.http.services.grafana.loadbalancer.server.scheme=http
 
       # Network configuration
@@ -159,7 +160,7 @@ services:
 
   node_exporter:
     image: prom/node-exporter:latest
-    container_name: monitors_node_exporter
+    container_name: node_exporter
     hostname: node_exporter
     networks:
       - n8n_net
@@ -199,12 +200,33 @@ services:
       # Enable Traefik
       - "traefik.enable=true"
       # Define the service with correct container port
-      - "traefik.http.services.dozzle-svc.loadbalancer.server.port=8080"
+      - "traefik.http.services.dozzle-svc.loadbalancer.server.port=8801"
       # Router for local access
       - "traefik.http.routers.dozzle-local.rule=Host(`dozzle.local`)"
       - "traefik.http.routers.dozzle-local.entrypoints=web"
       - "traefik.http.routers.dozzle-local.service=dozzle-svc"
       # Network configuration
+      - "traefik.docker.network=n8n_net"
+
+  ollama-metrics:
+    build: ./ollama-metrics
+    container_name: ollama-metrics
+    restart: unless-stopped
+    env_file:
+      - ./ollama-metrics/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - n8n_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ollama-metrics.rule=Host(`ollama-metrics.avocado4ai.com`)"
+      - "traefik.http.routers.ollama-metrics.entrypoints=websecure"
+      - "traefik.http.routers.ollama-metrics.tls=true"
+      - "traefik.http.routers.ollama-metrics.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ollama-metrics.service=ollama-metrics"
+      - "traefik.http.services.ollama-metrics.loadbalancer.server.port=1313"
+      - "traefik.http.services.ollama-metrics.loadbalancer.server.scheme=http"
       - "traefik.docker.network=n8n_net"
 
 networks:
