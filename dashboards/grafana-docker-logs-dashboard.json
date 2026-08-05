@@ -381,8 +381,7 @@
     "containers",
     "logs",
     "dozzle",
-    "scrapy",
-    "postgresml"
+    "scrapy"
   ],
   "templating": {
     "list": []

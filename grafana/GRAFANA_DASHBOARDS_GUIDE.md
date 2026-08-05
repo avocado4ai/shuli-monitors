@@ -1,7 +1,7 @@
 # Grafana Dashboards Setup Guide
 
 **Created**: November 9, 2025
-**Last Updated**: November 10, 2025 (Added Scrapy & PostgresML dashboard)
+**Last Updated**: July 30, 2026 (Removed LiteLLM & PostgresML)
 **Purpose**: Monitor Dozzle logs, system metrics, web scraping, and ML services in Grafana
 **Status**: Ready for import and configuration
 
@@ -57,42 +57,6 @@
 
 ---
 
-### 3. **Scrapy & PostgresML Monitoring Dashboard** (NEW)
-**File**: `grafana-scrapy-postgresml-dashboard.json`
-
-**Contents**:
-- Service status indicators (Scrapy & PostgresML)
-- Scrapy spider activity (pages scraped, requests/sec)
-- Container memory usage (Scrapyd, PostgresML)
-- Container CPU usage (Scrapyd, PostgresML)
-- Scrapy job statistics (pending, received, dropped requests)
-- PostgresML database activity (queries/sec, function calls)
-- PostgresML models and training information
-- Container status indicators for both services
-- PostgresML disk I/O monitoring
-- PostgresML database connections
-- Quick links and documentation section
-
-**Data Source**: Prometheus
-**Refresh Rate**: Dynamic (adaptable)
-**Time Range**: Last 24 hours
-
-**Use Cases**:
-- Monitor web scraping performance and job status
-- Track PostgresML ML model training and execution
-- Monitor database activity and connections
-- Identify resource bottlenecks in both services
-- Quick access to service UIs (Scrapyd-UI, PostgresML Dashboard)
-- View integration documentation
-
-**Service-Specific Links**:
-- Scrapy Web Interface: http://localhost:3007 (when running)
-- Scrapy API: http://localhost:6800
-- PostgresML Dashboard: http://localhost:8100
-- PostgresML Database: localhost:5433
-
----
-
 ## 🚀 Quick Start
 
 ### Step 1: Access Grafana
@@ -112,7 +76,6 @@ Default login: `admin` / `admin`
 3. In "Import via panel json" section, paste JSON content from files:
    - `grafana-docker-logs-dashboard.json`
    - `grafana-system-metrics-dashboard.json`
-   - `grafana-scrapy-postgresml-dashboard.json` (NEW)
 4. Select **"Prometheus"** as data source
 5. Click **"Import"**
 
@@ -128,11 +91,6 @@ curl -X POST http://localhost:3091/api/dashboards/db \
 curl -X POST http://localhost:3091/api/dashboards/db \
   -H "Content-Type: application/json" \
   -d @/home/dev/grafana-system-metrics-dashboard.json
-
-# Import Scrapy & PostgresML Dashboard (NEW)
-curl -X POST http://localhost:3091/api/dashboards/db \
-  -H "Content-Type: application/json" \
-  -d @/home/dev/grafana-scrapy-postgresml-dashboard.json
 ```
 
 ### Step 3: Verify Data Source
@@ -519,20 +477,16 @@ After importing dashboards, verify:
    - Shows running container count
    - CPU and memory graphs have data
    - Dozzle link works
-   - See service-specific links (Scrapy, PostgresML)
+    - See service-specific links
 
 2. **System Metrics Dashboard**
    - Shows CPU, Memory, Disk usage
    - Load average graph updates
    - Hardware stats show correct values
-   - Includes tags for Scrapy and PostgresML
+    - Includes tags for Scrapy
 
-3. **Scrapy & PostgresML Dashboard** (NEW)
-   - Service status indicators show up/down status
-   - Spider activity graphs show data (if Scrapy running)
-   - Container memory and CPU usage displays correctly
-   - PostgresML database metrics appear
-   - Quick links work (Dozzle, Scrapy UI, PostgresML UI)
+3. **Docker Logs Dashboard**
+   - Confirmed working
 
 4. **Data Updates**
    - Graphs update every 30 seconds (configurable)
@@ -547,14 +501,12 @@ After importing dashboards, verify:
 |-----------|------|--------|-------|
 | Docker Logs | `grafana-docker-logs-dashboard.json` | 6 | Container monitoring, Dozzle integration |
 | System Metrics | `grafana-system-metrics-dashboard.json` | 8 | System resources, load, disk usage |
-| Scrapy & PostgresML | `grafana-scrapy-postgresml-dashboard.json` | 13 | Web scraping and ML service monitoring |
-
 ---
 
 **Created**: November 9, 2025
-**Last Updated**: November 10, 2025
+**Last Updated**: July 30, 2026
 **Status**: Ready for import and use
-**Total Dashboards**: 3
-**Total Panels**: 27
+**Total Dashboards**: 2
+**Total Panels**: 14
 **Data Source**: Prometheus (http://localhost:9098)
-**Monitoring Services**: Docker, Dozzle, Scrapy, PostgresML
+**Monitoring Services**: Docker, Dozzle, Scrapy

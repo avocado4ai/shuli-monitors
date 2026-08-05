@@ -610,7 +610,6 @@
     "metrics",
     "performance",
     "scrapy",
-    "postgresml",
     "docker"
   ],
   "templating": {
