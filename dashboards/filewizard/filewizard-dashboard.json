@@ -101,7 +101,6 @@
           ]
         }
       ],
-      "transformations": [],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -200,27 +199,8 @@
               "text": "error_message",
               "type": "string"
             }
-          ]
-        }
-      ],
-      "transformations": [
-        {
-          "id": "filterByValue",
-          "options": {
-            "filters": [
-              {
-                "fieldName": "status",
-                "config": {
-                  "id": "equal",
-                  "options": {
-                    "value": "completed"
-                  }
-                }
-              }
-            ],
-            "type": "include",
-            "match": "any"
-          }
+          ],
+          "filterExpression": "status == \"completed\""
         }
       ],
       "fieldConfig": {
@@ -321,27 +301,8 @@
               "text": "error_message",
               "type": "string"
             }
-          ]
-        }
-      ],
-      "transformations": [
-        {
-          "id": "filterByValue",
-          "options": {
-            "filters": [
-              {
-                "fieldName": "status",
-                "config": {
-                  "id": "equal",
-                  "options": {
-                    "value": "failed"
-                  }
-                }
-              }
-            ],
-            "type": "include",
-            "match": "any"
-          }
+          ],
+          "filterExpression": "status == \"failed\""
         }
       ],
       "fieldConfig": {
@@ -587,26 +548,10 @@
               "text": "error_message",
               "type": "string"
             }
-          ]
-        }
-      ],
-      "transformations": [
-        {
-          "id": "groupBy",
-          "options": {
-            "fields": {
-              "status": {
-                "aggregations": [],
-                "operation": "groupby"
-              },
-              "id": {
-                "aggregations": [
-                  "count"
-                ],
-                "operation": "aggregate"
-              }
-            }
-          }
+          ],
+          "summarizeExpression": "count(id)",
+          "summarizeBy": "status",
+          "summarizeAlias": "count"
         }
       ],
       "fieldConfig": {
@@ -701,26 +646,10 @@
               "text": "error_message",
               "type": "string"
             }
-          ]
-        }
-      ],
-      "transformations": [
-        {
-          "id": "groupBy",
-          "options": {
-            "fields": {
-              "task_type": {
-                "aggregations": [],
-                "operation": "groupby"
-              },
-              "id": {
-                "aggregations": [
-                  "count"
-                ],
-                "operation": "aggregate"
-              }
-            }
-          }
+          ],
+          "summarizeExpression": "count(id)",
+          "summarizeBy": "task_type",
+          "summarizeAlias": "count"
         }
       ],
       "fieldConfig": {
@@ -815,27 +744,8 @@
               "text": "error_message",
               "type": "string"
             }
-          ]
-        }
-      ],
-      "transformations": [
-        {
-          "id": "filterByValue",
-          "options": {
-            "filters": [
-              {
-                "fieldName": "status",
-                "config": {
-                  "id": "equal",
-                  "options": {
-                    "value": "failed"
-                  }
-                }
-              }
-            ],
-            "type": "include",
-            "match": "any"
-          }
+          ],
+          "filterExpression": "status == \"failed\""
         }
       ],
       "fieldConfig": {
@@ -923,7 +833,6 @@
           ]
         }
       ],
-      "transformations": [],
       "fieldConfig": {
         "defaults": {},
         "overrides": []
