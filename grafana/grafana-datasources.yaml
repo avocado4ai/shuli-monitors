@@ -55,3 +55,32 @@ datasources:
       sslmode: 'disable'
       postgresVersion: 1400
       timescaledb: false
+
+  # MySQL - Ivrit transcription service database (jobs, segments, transcripts)
+  - name: Ivrit MySQL
+    uid: ivrit-mysql
+    type: mysql
+    access: proxy
+    url: ivrit-mysql:3306
+    database: ivrit_db
+    user: ivrit_user
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: true
+    secureJsonData:
+      password: 'ivrit_password'
+    jsonData:
+      maxOpenConns: 5
+      maxIdleConns: 2
+
+  # Infinity - JSON REST API polling for services without a DB/Prometheus (FileWizard, Docling)
+  - name: Infinity
+    uid: infinity
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      auth_method: none
