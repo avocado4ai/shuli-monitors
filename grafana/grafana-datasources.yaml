@@ -21,7 +21,7 @@ datasources:
   # PostgreSQL - Direct database access for n8n data queries
   - name: PostgreSQL
     uid: postgresql
-    type: postgres
+    type: grafana-postgresql-datasource
     access: proxy
     url: postgres:5432
     database: n8n
@@ -40,7 +40,7 @@ datasources:
   # PostgreSQL - QuoteAI application database (logs, jobs, chat_logs, proposals)
   - name: QuoteAI PostgreSQL
     uid: quoteai-postgres
-    type: postgres
+    type: grafana-postgresql-datasource
     access: proxy
     url: postgres:5432
     database: quoteai_db
