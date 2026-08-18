@@ -11,7 +11,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 36,
-  "version": 2,
+  "version": 3,
   "refresh": "1m",
   "time": {
     "from": "now-24h",
@@ -826,7 +826,7 @@
     },
     {
       "id": 21,
-      "title": "Proposals Created Over Time",
+      "title": "Proposals Created Over Time (last 12mo, fixed range)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -875,7 +875,8 @@
         "tooltip": {
           "mode": "multi"
         }
-      }
+      },
+      "timeFrom": "365d"
     },
     {
       "id": 22,
@@ -928,7 +929,7 @@
     },
     {
       "id": 23,
-      "title": "Avg Completion %",
+      "title": "Avg Proposal Priority (1-5)",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -947,13 +948,13 @@
             "uid": "quoteai-postgres"
           },
           "format": "table",
-          "rawSql": "SELECT round(avg(\"completionPercentage\")) FROM proposals",
+          "rawSql": "SELECT round(avg(priority),1) FROM proposals",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "percent",
+          "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -983,7 +984,7 @@
     },
     {
       "id": 24,
-      "title": "Total Files Processed",
+      "title": "Total Files Uploaded",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -1002,7 +1003,7 @@
             "uid": "quoteai-postgres"
           },
           "format": "table",
-          "rawSql": "SELECT sum(\"totalFiles\") FROM proposals",
+          "rawSql": "SELECT count(*) FROM files",
           "refId": "A"
         }
       ],
