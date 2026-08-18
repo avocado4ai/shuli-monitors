@@ -36,3 +36,22 @@ datasources:
       sslmode: 'disable'
       postgresVersion: 1400
       timescaledb: false
+
+  # PostgreSQL - QuoteAI application database (logs, jobs, chat_logs, proposals)
+  - name: QuoteAI PostgreSQL
+    uid: quoteai-postgres
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: quoteai_db
+    user: quoteai
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: true
+    secureJsonData:
+      password: 'quoteai'
+    jsonData:
+      sslmode: 'disable'
+      postgresVersion: 1400
+      timescaledb: false
