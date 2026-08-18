@@ -45,7 +45,7 @@ scrape_configs:
   # NVIDIA GPU metrics via unified exporter (DCGM-based)
   - job_name: 'nvidia-gpu'
     static_configs:
-      - targets: [ 'nvidia_gpu_exporter:9835' ]
+      - targets: [ 'nvidia_gpu_exporter:9836' ]
         labels:
           service: 'nvidia-gpu'
           role: 'gpu-metrics'
