@@ -29,3 +29,7 @@ grafana/misc-grafana-dashboards/
 *.db
 *.db.backup
 grafana/data/
+# mempalace tool output
+mempalace.yaml
+entities.json
+config/

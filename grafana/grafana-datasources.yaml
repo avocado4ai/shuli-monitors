@@ -31,7 +31,7 @@ datasources:
     version: 1
     editable: true
     secureJsonData:
-      password: '029466372'
+      password: '${DS_N8N_PG_PASSWORD}'
     jsonData:
       sslmode: 'disable'
       postgresVersion: 1400
@@ -50,7 +50,28 @@ datasources:
     version: 1
     editable: true
     secureJsonData:
-      password: 'quoteai'
+      password: '${DS_QUOTEAI_PG_PASSWORD}'
+    jsonData:
+      sslmode: 'disable'
+      postgresVersion: 1400
+      timescaledb: false
+
+  # PostgreSQL - QuoteAI dev clone (scripts/dev.sh runs against this one).
+  # Lets the QuoteAI dashboards be pointed at the dev stack via their datasource
+  # variable, so a change can be seen working before it is deployed to production.
+  - name: QuoteAI PostgreSQL (dev)
+    uid: quoteai-postgres-dev
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: postgres:5432
+    database: quoteai_dev
+    user: quoteai
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: true
+    secureJsonData:
+      password: '${DS_QUOTEAI_DEV_PG_PASSWORD}'
     jsonData:
       sslmode: 'disable'
       postgresVersion: 1400
@@ -69,7 +90,7 @@ datasources:
     version: 1
     editable: true
     secureJsonData:
-      password: 'ivrit_password'
+      password: '${DS_IVRIT_MYSQL_PASSWORD}'
     jsonData:
       maxOpenConns: 5
       maxIdleConns: 2
