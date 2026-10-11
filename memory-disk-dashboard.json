@@ -789,7 +789,7 @@
         },
         "targets": [
           {
-            "expr": "container_memory_usage_bytes{container_label_com_docker_container_name!~\"|^$",id=~\"/docker/.*\"}",
+            "expr": "container_memory_usage_bytes{container_label_com_docker_container_name!~\"|^$\",id=~\"/docker/.*\"}",
             "legendFormat": "{{container_label_com_docker_container_name}}"
           }
         ],

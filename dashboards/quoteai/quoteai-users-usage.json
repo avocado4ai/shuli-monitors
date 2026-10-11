@@ -1,0 +1,3635 @@
+{
+  "id": null,
+  "uid": "quoteai-users-usage",
+  "title": "QuoteAI — משתמשים ושימוש במערכת",
+  "description": "Who is using QuoteAI right now, how much each person runs, the connection history, and the load all of it puts on the system. Presence and history come from user_activity_events (append-only, written by the backend); AI runs come from chat_logs.user_id.",
+  "tags": [
+    "quoteai",
+    "users",
+    "usage",
+    "load"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PG",
+        "label": "Database",
+        "type": "datasource",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "QuoteAI PostgreSQL",
+          "value": "quoteai-postgres"
+        },
+        "hide": 0,
+        "refresh": 1,
+        "description": "QuoteAI PostgreSQL = production (quoteai_db)."
+      },
+      {
+        "name": "online_window",
+        "label": "חלון נוכחות",
+        "type": "custom",
+        "query": "2 minutes,5 minutes,15 minutes,30 minutes,1 hour",
+        "current": {
+          "text": "5 minutes",
+          "value": "5 minutes"
+        },
+        "options": [
+          {
+            "text": "2 minutes",
+            "value": "2 minutes",
+            "selected": false
+          },
+          {
+            "text": "5 minutes",
+            "value": "5 minutes",
+            "selected": true
+          },
+          {
+            "text": "15 minutes",
+            "value": "15 minutes",
+            "selected": false
+          },
+          {
+            "text": "30 minutes",
+            "value": "30 minutes",
+            "selected": false
+          },
+          {
+            "text": "1 hour",
+            "value": "1 hour",
+            "selected": false
+          }
+        ],
+        "hide": 0,
+        "description": "How recently a user must have hit the API to count as online."
+      },
+      {
+        "name": "session_gap",
+        "label": "פער בין סשנים",
+        "type": "custom",
+        "query": "5 minutes,15 minutes,30 minutes,1 hour",
+        "current": {
+          "text": "15 minutes",
+          "value": "15 minutes"
+        },
+        "options": [
+          {
+            "text": "5 minutes",
+            "value": "5 minutes",
+            "selected": false
+          },
+          {
+            "text": "15 minutes",
+            "value": "15 minutes",
+            "selected": true
+          },
+          {
+            "text": "30 minutes",
+            "value": "30 minutes",
+            "selected": false
+          },
+          {
+            "text": "1 hour",
+            "value": "1 hour",
+            "selected": false
+          }
+        ],
+        "hide": 0,
+        "description": "Quiet period that ends a session in the sessions table."
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "נוכחות — מי בפנים עכשיו",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "מחוברים כרגע",
+      "description": "Distinct users with any API activity inside the presence window (the window is the dashboard variable at the top). There is no logout endpoint, so presence is derived from activity, not from an open session.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(DISTINCT user_id) AS \"online\"\nFROM user_activity_events\nWHERE user_id IS NOT NULL\n  AND event_type <> 'login_failed'\n  AND created_at > now() - ('$online_window')::interval",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "פעילים היום",
+      "description": "Distinct users active since midnight (server time).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(DISTINCT user_id) AS \"today\"\nFROM user_activity_events\nWHERE user_id IS NOT NULL AND event_type <> 'login_failed'\n  AND created_at >= date_trunc('day', now())",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "פעילים בטווח",
+      "description": "Distinct users active inside the dashboard's time range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(DISTINCT user_id) AS \"in range\"\nFROM user_activity_events\nWHERE user_id IS NOT NULL AND event_type <> 'login_failed'\n  AND $__timeFilter(created_at)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "סה״כ משתמשים",
+      "description": "Accounts that can log in (users.is_active).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"users\" FROM users WHERE is_active",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "התחברויות",
+      "description": "Successful logins. Rows marked method='SEED' are the one-time backfill from users.last_login and are excluded.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"logins\"\nFROM user_activity_events\nWHERE event_type = 'login' AND method IS DISTINCT FROM 'SEED' AND $__timeFilter(created_at)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "כשלי כניסה",
+      "description": "Wrong password or unknown username. A sustained rise here is either a locked-out user or someone guessing.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"failed\"\nFROM user_activity_events\nWHERE event_type = 'login_failed' AND $__timeFilter(created_at)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 15
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "מי מחובר כרגע",
+      "description": "One row per user seen inside the presence window. A heartbeat is written at most once per user per minute, so 'heartbeats' is roughly minutes-active, not request count.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT\n  COALESCE(u.full_name, e.username, e.user_id)                  AS \"user\",\n  e.username                                                     AS \"username\",\n  COALESCE(u.role::text, e.role)                                 AS \"role\",\n  max(e.created_at)                                              AS \"last seen\",\n  round(extract(epoch FROM (now() - max(e.created_at))))::int    AS \"seconds ago\",\n  (array_agg(e.ip ORDER BY e.created_at DESC))[1]                AS \"ip\",\n  count(*)                                                       AS \"heartbeats\"\nFROM user_activity_events e\nLEFT JOIN users u ON u.id::text = e.user_id\nWHERE e.user_id IS NOT NULL\n  AND e.event_type <> 'login_failed'\n  AND e.created_at > now() - ('$online_window')::interval\nGROUP BY 1, 2, 3\nORDER BY max(e.created_at) DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "seconds ago"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 300
+                    },
+                    {
+                      "color": "text",
+                      "value": 1800
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "משתמשים פעילים לאורך זמן",
+      "description": "Distinct users per time bucket. Buckets follow the dashboard's interval, so a wide range means coarser buckets and a higher count per bucket.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "\nSELECT $__timeGroupAlias(created_at, $__interval),\n       count(DISTINCT user_id) AS \"active users\"\nFROM user_activity_events\nWHERE $__timeFilter(created_at) AND user_id IS NOT NULL\n  AND event_type <> 'login_failed'\nGROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "ריצות AI לפי משתמש",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "panels": []
+    },
+    {
+      "id": 11,
+      "type": "bargauge",
+      "title": "ריצות לפי משתמש",
+      "description": "Every LLM call in chat_logs, credited to the user whose request triggered it. Background work (queued jobs, the generation watchdog, n8n callbacks) has no human behind it and lands in the unattributed bucket.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT COALESCE(u.full_name, 'ללא משתמש (רקע)') AS \"user\", count(*) AS \"runs\"\nFROM chat_logs c\nLEFT JOIN users u ON u.id::text = c.user_id\nWHERE $__timeFilter(c.created_at)\nGROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "continuous-BlPu"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "table",
+      "title": "פירוט ריצות לפי משתמש",
+      "description": "Runs, failures, token spend and latency per user for the selected range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT\n  COALESCE(u.full_name, 'ללא משתמש (רקע)')                                    AS \"user\",\n  count(*)                                                              AS \"runs\",\n  count(*) FILTER (WHERE c.status = 'error')                            AS \"errors\",\n  round(100.0 * count(*) FILTER (WHERE c.status = 'error') / NULLIF(count(*), 0), 1) AS \"error %\",\n  COALESCE(sum(c.tokens_used), 0)                                       AS \"tokens\",\n  round(avg(c.execution_time_ms) / 1000.0, 1)                           AS \"avg sec\",\n  round(max(c.execution_time_ms) / 1000.0, 1)                           AS \"max sec\",\n  count(DISTINCT c.proposal_id)                                         AS \"deals\",\n  max(c.created_at)                                                     AS \"last run\"\nFROM chat_logs c\nLEFT JOIN users u ON u.id::text = c.user_id\nWHERE $__timeFilter(c.created_at)\nGROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 8,
+        "y": 15
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 5
+                    },
+                    {
+                      "color": "red",
+                      "value": 20
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "runs"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "ריצות לאורך זמן לפי משתמש",
+      "description": "Stacked so the total height is the system's whole AI load and each band is one user's share.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "\nSELECT $__timeGroupAlias(c.created_at, $__interval),\n       COALESCE(u.full_name, 'ללא משתמש (רקע)') AS metric,\n       count(*) AS value\nFROM chat_logs c\nLEFT JOIN users u ON u.id::text = c.user_id\nWHERE $__timeFilter(c.created_at)\nGROUP BY 1, 2 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 14,
+      "type": "piechart",
+      "title": "ריצות לפי סוג פעולה",
+      "description": "chat_logs.source — which part of the product asked the model (generation, chat, requirements seed, work process, product breakdown…).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT c.source AS \"source\", count(*) AS \"runs\"\nFROM chat_logs c\nWHERE $__timeFilter(c.created_at)\nGROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 15,
+      "type": "piechart",
+      "title": "ריצות לפי סטטוס",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT c.status AS \"status\", count(*) AS \"runs\"\nFROM chat_logs c\nWHERE $__timeFilter(c.created_at)\nGROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 24
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 16,
+      "type": "row",
+      "title": "היסטוריית חיבורים",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "panels": []
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "התחברויות לאורך זמן",
+      "description": "Successful logins per bucket, per user.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "\nSELECT $__timeGroupAlias(e.created_at, $__interval),\n       COALESCE(u.full_name, e.username, 'unknown') AS metric,\n       count(*) AS value\nFROM user_activity_events e\nLEFT JOIN users u ON u.id::text = e.user_id\nWHERE e.event_type = 'login' AND e.method IS DISTINCT FROM 'SEED' AND $__timeFilter(e.created_at)\nGROUP BY 1, 2 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 18,
+      "type": "table",
+      "title": "יומן התחברויות",
+      "description": "Every login and failed login in range, newest first. Rows with method 'SEED' come from the one-time backfill and carry no IP or client.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT\n  e.created_at                                    AS \"time\",\n  COALESCE(u.full_name, e.username, 'unknown')    AS \"user\",\n  e.username                                      AS \"username\",\n  e.event_type                                    AS \"event\",\n  COALESCE(u.role::text, e.role)                  AS \"role\",\n  e.ip                                            AS \"ip\",\n  left(e.user_agent, 60)                          AS \"client\"\nFROM user_activity_events e\nLEFT JOIN users u ON u.id::text = e.user_id\nWHERE e.event_type IN ('login', 'login_failed') AND $__timeFilter(e.created_at)\nORDER BY e.created_at DESC\nLIMIT 300",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "event"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "login": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "login"
+                      },
+                      "login_failed": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "login failed"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "type": "table",
+      "title": "סשנים (נגזרים מפעילות)",
+      "description": "Sessions are derived, not stored: a user's events are cut into sessions wherever they went quiet for longer than the session-gap variable. A session of 0 minutes is a single request. Because heartbeats are throttled to one a minute, session length is accurate to about a minute.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nWITH ev AS (\n  SELECT user_id, username, created_at,\n         CASE WHEN lag(created_at) OVER (PARTITION BY user_id ORDER BY created_at) IS NULL\n                OR created_at - lag(created_at) OVER (PARTITION BY user_id ORDER BY created_at)\n                    > ('$session_gap')::interval\n              THEN 1 ELSE 0 END AS is_new\n  FROM user_activity_events\n  WHERE user_id IS NOT NULL AND event_type <> 'login_failed'\n    AND $__timeFilter(created_at)\n), grp AS (\n  SELECT *, sum(is_new) OVER (PARTITION BY user_id ORDER BY created_at) AS session_no FROM ev\n)\nSELECT\n  COALESCE(u.full_name, g.username, g.user_id)                                   AS \"user\",\n  min(g.created_at)                                                              AS \"session start\",\n  max(g.created_at)                                                              AS \"last activity\",\n  round(extract(epoch FROM (max(g.created_at) - min(g.created_at))) / 60.0, 1)   AS \"minutes\",\n  count(*)                                                                       AS \"events\"\nFROM grp g\nLEFT JOIN users u ON u.id::text = g.user_id\nGROUP BY g.user_id, g.session_no, 1\nORDER BY 2 DESC\nLIMIT 200",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "minutes"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "שימוש ועומסים",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "panels": []
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "זמן תגובה של השרת (ms)",
+      "description": "Measured on the sampled heartbeat requests (one per user per minute), not on every request — read it as a latency sample, not as a full percentile.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "\nSELECT $__timeGroupAlias(created_at, $__interval),\n       round(avg(duration_ms))                                                    AS \"avg\",\n       round(percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms)::numeric)  AS \"p95\",\n       max(duration_ms)                                                           AS \"max\"\nFROM user_activity_events\nWHERE $__timeFilter(created_at) AND duration_ms IS NOT NULL\nGROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 51
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 22,
+      "type": "table",
+      "title": "המסלולים האיטיים ביותר",
+      "description": "Slowest endpoints by sampled p95. Deal ids appear in the path, so the same endpoint shows once per deal.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT\n  path                                                                     AS \"path\",\n  count(*)                                                                 AS \"samples\",\n  round(avg(duration_ms))                                                  AS \"avg ms\",\n  round(percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms)::numeric) AS \"p95 ms\",\n  max(duration_ms)                                                         AS \"max ms\"\nFROM user_activity_events\nWHERE $__timeFilter(created_at) AND duration_ms IS NOT NULL AND path IS NOT NULL\nGROUP BY 1\nHAVING count(*) >= 2\nORDER BY 4 DESC NULLS LAST\nLIMIT 30",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 51
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 1000
+                    },
+                    {
+                      "color": "red",
+                      "value": 5000
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "קודי סטטוס בתשובות",
+      "description": "From the sampled heartbeats. Any 5xx band at all is worth opening the logs for.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "\nSELECT $__timeGroupAlias(created_at, $__interval),\n       CASE WHEN status_code >= 500 THEN '5xx server error'\n            WHEN status_code = 401 OR status_code = 403 THEN '401/403 auth'\n            WHEN status_code >= 400 THEN '4xx client error'\n            ELSE '2xx/3xx ok' END AS metric,\n       count(*) AS value\nFROM user_activity_events\nWHERE $__timeFilter(created_at) AND status_code IS NOT NULL\nGROUP BY 1, 2 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 59
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "קריאות וטוקנים של המודל",
+      "description": "Model calls (/api/chat + /api/generate, embeddings excluded) and the tokens they burned, prompt + completion, as measured by the Ollama proxy (ollama_usage_events). It used to sum chat_logs.tokens_used, which is a completion-side estimate and understated the measured figure about 14x.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "\nSELECT $__timeGroupAlias(created_at, $__interval),\n       count(*)                                                             AS \"calls\",\n       COALESCE(sum(COALESCE(prompt_tokens, 0) + COALESCE(completion_tokens, 0)), 0) AS \"tokens\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at) AND endpoint <> '/api/embed'\nGROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 59
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "calls"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "type": "timeseries",
+      "title": "משימות רקע לפי סטטוס",
+      "description": "Background file-processing / analysis jobs created per bucket, by status.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "\nSELECT $__timeGroupAlias(created_at, $__interval),\n       status AS metric,\n       count(*) AS value\nFROM jobs\nWHERE $__timeFilter(created_at)\nGROUP BY 1, 2 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 59
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 26,
+      "type": "stat",
+      "title": "משימות רקע רצות",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"running\" FROM jobs WHERE status = 'processing'",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 67
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 8
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 27,
+      "type": "stat",
+      "title": "משימות רקע בהמתנה",
+      "description": "",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"queued\" FROM jobs WHERE status IN ('new', 'queued')",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 67
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 28,
+      "type": "stat",
+      "title": "ריצות AI פתוחות",
+      "description": "Rows still open in chat_logs. The watchdog fails anything stuck.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"generating\" FROM chat_logs WHERE status IN ('pending', 'generating')",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 67
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 29,
+      "type": "stat",
+      "title": "חיבורים פתוחים למסד",
+      "description": "Open PostgreSQL backends, per database. Both are shown because the dashboard's Database variable can point at either — a panel hardcoded to one of them reads 0 while you are looking at the other.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "instant": true,
+          "expr": "sum by (datname) (pg_stat_database_numbackends{datname=~\"quoteai_db|quoteai_dev\"})",
+          "refId": "A",
+          "legendFormat": "{{datname}}"
+        }
+      ],
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 67
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "עומס מעבד בקונטיינרים (%)",
+      "description": "Host-side view of the app containers, from cAdvisor.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "legendFormat": "{{name}}",
+          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\"quoteai-backend|quoteai-frontend|postgres\"}[5m])) * 100"
+        }
+      ],
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 71
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "זיכרון בקונטיינרים (MB)",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "legendFormat": "{{name}}",
+          "expr": "sum by (name) (container_memory_usage_bytes{name=~\"quoteai-backend|quoteai-frontend|postgres\"}) / 1024 / 1024"
+        }
+      ],
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 71
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 32,
+      "type": "row",
+      "title": "טוקנים והטמעות (Ollama)",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 77
+      }
+    },
+    {
+      "id": 33,
+      "type": "stat",
+      "title": "קריאות הטמעה",
+      "description": "Embedding calls in the selected range. Every RAG ingest chunk and every semantic search counts one.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"embed calls\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at) AND endpoint = '/api/embed'",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 78
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 34,
+      "type": "stat",
+      "title": "טוקנים בהטמעות",
+      "description": "Real prompt_eval_count reported by Ollama — not a chars/4 estimate.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT COALESCE(sum(prompt_tokens), 0) AS \"tokens\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at) AND endpoint = '/api/embed'",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 78
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 35,
+      "type": "stat",
+      "title": "זמן ממוצע להטמעה",
+      "description": "Average Ollama-reported duration per embedding call.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT round(avg(total_duration_ms)) AS \"avg ms\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at) AND endpoint = '/api/embed'",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 78
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 36,
+      "type": "stat",
+      "title": "שורות ללא מונה טוקנים",
+      "description": "Regression guard (#366): a call recorded without a token count. Must stay 0 — anything above it means a new caller joined the blind spot.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"missing\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at) AND prompt_tokens IS NULL",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 78
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 37,
+      "type": "timeseries",
+      "title": "הטמעות וטוקנים לאורך זמן",
+      "description": "Embedding volume over time. Ingest arrives in bursts — one call per chunk of a document.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "\nSELECT $__timeGroupAlias(created_at, $__interval),\n       count(*)                          AS \"embed calls\",\n       COALESCE(sum(prompt_tokens), 0)   AS \"tokens\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at) AND endpoint = '/api/embed'\nGROUP BY 1 ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 83,
+        "w": 24,
+        "h": 8
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisSoftMin": 0
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 38,
+      "type": "table",
+      "title": "לפי endpoint ומודל",
+      "description": "Every Ollama endpoint the system records, with real counters. /api/chat carries completion tokens; embeddings only ever have prompt tokens.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT endpoint                                       AS \"endpoint\",\n       COALESCE(model, '—')                           AS \"model\",\n       count(*)                                        AS \"calls\",\n       COALESCE(sum(prompt_tokens), 0)                 AS \"prompt\",\n       COALESCE(sum(completion_tokens), 0)             AS \"completion\",\n       round(avg(total_duration_ms))                   AS \"avg ms\",\n       count(*) FILTER (WHERE prompt_tokens IS NULL)   AS \"missing\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at)\nGROUP BY 1, 2 ORDER BY 3 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 91,
+        "w": 24,
+        "h": 8
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "missing"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "type": "table",
+      "title": "מקור הקריאות",
+      "description": "Who made the call. Rows with no proxy timing were recorded by the backend itself (ollamaService); the rest passed through quoteai-ollama-proxy, where the IP identifies the container — the n8n worker is where RAG ingest embeds.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT CASE WHEN proxy_duration_ms IS NULL\n            THEN 'backend — נרשם ישירות'\n            ELSE 'proxy — ' || COALESCE(client_ip, '?')\n       END                                    AS \"מקור\",\n       count(*)                               AS \"calls\",\n       COALESCE(sum(prompt_tokens), 0)        AS \"prompt\",\n       round(avg(total_duration_ms))          AS \"avg ms\",\n       max(created_at)                        AS \"last seen\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at)\nGROUP BY 1 ORDER BY 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 99,
+        "w": 24,
+        "h": 7
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last seen"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 54,
+      "type": "table",
+      "title": "כיסוי טוקנים לפי מקור (ריצות ללא מונה)",
+      "description": "Completed chat_logs runs per source and how many carry no token count (tokens_used NULL or 0). A source that appears with a red 'ללא מונה' is a blind spot in the token figures. scripts/verify.sh fails when a source with 5+ runs in 7 days drops below 80% coverage.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT source                                                        AS \"מקור\",\n       count(*)                                                      AS \"ריצות\",\n       count(*) FILTER (WHERE COALESCE(tokens_used, 0) = 0)          AS \"ללא מונה\",\n       round(100.0 * count(*) FILTER (WHERE COALESCE(tokens_used, 0) > 0) / count(*), 1) AS \"כיסוי %\"\nFROM chat_logs\nWHERE $__timeFilter(created_at) AND status = 'completed'\nGROUP BY 1 ORDER BY 3 DESC, 2 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 106,
+        "w": 24,
+        "h": 8
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ללא מונה"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "כיסוי %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 80
+                    },
+                    {
+                      "color": "green",
+                      "value": 95
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 40,
+      "type": "row",
+      "title": "שיוך — עלות לפי עסקה ומשתמש",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 114
+      }
+    },
+    {
+      "id": 41,
+      "type": "stat",
+      "title": "כיסוי שיוך",
+      "description": "Share of recorded calls that carry a deal. Deliberately uncoloured: n8n's langchain LLM nodes cannot attribute at all, so this never reaches 100% and a low value is not a fault.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT round(100.0 * count(*) FILTER (WHERE proposal_id IS NOT NULL)\n             / nullif(count(*), 0)) AS \"pct\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 115
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 42,
+      "type": "stat",
+      "title": "עסקאות שנמדדו",
+      "description": "Distinct deals with at least one attributed call in range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(DISTINCT proposal_id) AS \"deals\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at) AND proposal_id IS NOT NULL",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 115
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 43,
+      "type": "stat",
+      "title": "טוקנים משויכים",
+      "description": "Prompt tokens that can be charged to a specific deal.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT COALESCE(sum(prompt_tokens), 0) AS \"tokens\"\nFROM ollama_usage_events\nWHERE $__timeFilter(created_at) AND proposal_id IS NOT NULL",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 115
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 44,
+      "type": "table",
+      "title": "לפי עסקה",
+      "description": "What each deal cost. Joined on proposals.\"dealName\" (quoted camelCase — the column is not deal_name). Unattributed calls are kept as their own row rather than hidden, so the totals still add up. Cost is an ESTIMATE: tokens x model_rates (placeholder prices for a comparable paid API — the models run locally). 'ללא תעריף' counts calls whose model has no rate row.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT COALESCE(p.\"dealName\", e.proposal_id, '(לא משויך)') AS \"עסקה\",\n       count(*)                          AS \"calls\",\n       COALESCE(sum(e.prompt_tokens), 0) AS \"prompt\",\n       COALESCE(sum(e.completion_tokens), 0) AS \"completion\",\n       COALESCE(round(sum(\n         COALESCE(e.prompt_tokens, 0)     / 1000.0 * COALESCE(r.prompt_per_1k, 0)\n       + COALESCE(e.completion_tokens, 0) / 1000.0 * COALESCE(r.completion_per_1k, 0)\n       ), 4), 0)                          AS \"עלות מוערכת ₪\",\n       count(*) FILTER (WHERE r.model IS NULL) AS \"ללא תעריף\",\n       round(avg(e.total_duration_ms))   AS \"avg ms\",\n       max(e.created_at)                 AS \"last seen\"\nFROM ollama_usage_events e\nLEFT JOIN LATERAL (\n  SELECT m.model, m.prompt_per_1k, m.completion_per_1k FROM model_rates m\n  WHERE m.model = regexp_replace(e.model, ':latest$', '') AND m.effective_from <= e.created_at\n  ORDER BY m.effective_from DESC LIMIT 1) r ON true\nLEFT JOIN proposals p ON p.id = e.proposal_id\nWHERE $__timeFilter(e.created_at)\nGROUP BY 1 ORDER BY 5 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 120
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": [
+            "calls",
+            "prompt",
+            "completion",
+            "עלות מוערכת ₪",
+            "ללא תעריף"
+          ],
+          "countRows": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last seen"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "עלות מוערכת ₪"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyILS"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ללא תעריף"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 45,
+      "type": "table",
+      "title": "לפי משתמש",
+      "description": "Who caused the spend. Background work — queued jobs, the watchdog, n8n — has no user and is reported as such, not hidden. The join casts the uuid to text (not the reverse), so a malformed user_id degrades to showing itself instead of breaking the panel. Cost is an ESTIMATE: tokens x model_rates (placeholder prices for a comparable paid API — the models run locally). 'ללא תעריף' counts calls whose model has no rate row.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT COALESCE(u.username, e.user_id, '(רקע / ללא משתמש)') AS \"משתמש\",\n       count(*)                          AS \"calls\",\n       COALESCE(sum(e.prompt_tokens), 0) AS \"prompt\",\n       COALESCE(sum(e.completion_tokens), 0) AS \"completion\",\n       COALESCE(round(sum(\n         COALESCE(e.prompt_tokens, 0)     / 1000.0 * COALESCE(r.prompt_per_1k, 0)\n       + COALESCE(e.completion_tokens, 0) / 1000.0 * COALESCE(r.completion_per_1k, 0)\n       ), 4), 0)                          AS \"עלות מוערכת ₪\",\n       count(*) FILTER (WHERE r.model IS NULL) AS \"ללא תעריף\",\n       round(avg(e.total_duration_ms))   AS \"avg ms\",\n       max(e.created_at)                 AS \"last seen\"\nFROM ollama_usage_events e\nLEFT JOIN LATERAL (\n  SELECT m.model, m.prompt_per_1k, m.completion_per_1k FROM model_rates m\n  WHERE m.model = regexp_replace(e.model, ':latest$', '') AND m.effective_from <= e.created_at\n  ORDER BY m.effective_from DESC LIMIT 1) r ON true\nLEFT JOIN users u ON u.id::text = e.user_id\nWHERE $__timeFilter(e.created_at)\nGROUP BY 1 ORDER BY 5 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 128
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": [
+            "calls",
+            "prompt",
+            "completion",
+            "עלות מוערכת ₪",
+            "ללא תעריף"
+          ],
+          "countRows": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last seen"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "עלות מוערכת ₪"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyILS"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ללא תעריף"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 46,
+      "type": "table",
+      "title": "לפי סוג עבודה",
+      "description": "Which kind of work burns embeddings: rag-ingest, rag-search, semantic-search, hybrid-search, image-index, image-search. Cost is an ESTIMATE: tokens x model_rates (placeholder prices for a comparable paid API — the models run locally). 'ללא תעריף' counts calls whose model has no rate row.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT COALESCE(e.source, '(לא משויך)')  AS \"סוג עבודה\",\n       count(*)                          AS \"calls\",\n       COALESCE(sum(e.prompt_tokens), 0) AS \"prompt\",\n       COALESCE(sum(e.completion_tokens), 0) AS \"completion\",\n       COALESCE(round(sum(\n         COALESCE(e.prompt_tokens, 0)     / 1000.0 * COALESCE(r.prompt_per_1k, 0)\n       + COALESCE(e.completion_tokens, 0) / 1000.0 * COALESCE(r.completion_per_1k, 0)\n       ), 4), 0)                          AS \"עלות מוערכת ₪\",\n       count(*) FILTER (WHERE r.model IS NULL) AS \"ללא תעריף\",\n       round(avg(e.total_duration_ms))   AS \"avg ms\"\nFROM ollama_usage_events e\nLEFT JOIN LATERAL (\n  SELECT m.model, m.prompt_per_1k, m.completion_per_1k FROM model_rates m\n  WHERE m.model = regexp_replace(e.model, ':latest$', '') AND m.effective_from <= e.created_at\n  ORDER BY m.effective_from DESC LIMIT 1) r ON true\nWHERE $__timeFilter(e.created_at)\nGROUP BY 1 ORDER BY 5 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 135
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": [
+            "calls",
+            "prompt",
+            "completion",
+            "עלות מוערכת ₪",
+            "ללא תעריף"
+          ],
+          "countRows": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "עלות מוערכת ₪"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyILS"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ללא תעריף"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 47,
+      "type": "row",
+      "title": "ביקורת — מי עשה מה (#365)",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 142
+      }
+    },
+    {
+      "id": 48,
+      "type": "stat",
+      "title": "פעולות מתועדות",
+      "description": "Audited actions in range. Phase 1 covers AI runs (agent.run) and product-breakdown confirmations; phases 2-5 extend this to the workflow gates, content, delivery and admin actions.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"actions\"\nFROM audit_events\nWHERE $__timeFilter(created_at)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 143
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 49,
+      "type": "stat",
+      "title": "שחקנים מזוהים",
+      "description": "Distinct actors — humans and named background actors together.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(DISTINCT COALESCE(user_id, actor_type)) AS \"actors\"\nFROM audit_events\nWHERE $__timeFilter(created_at)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 143
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 50,
+      "type": "stat",
+      "title": "שורות שחקן פגום",
+      "description": "Rows claiming actor_type='user' but carrying no user_id. actor_type is NOT NULL so a truly blank actor cannot exist; this catches the real failure — getActor() resolving a request with no authenticated id. Must stay 0.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT count(*) AS \"broken\"\nFROM audit_events\nWHERE $__timeFilter(created_at) AND actor_type = 'user' AND user_id IS NULL",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 143
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 51,
+      "type": "table",
+      "title": "מי עשה מה",
+      "description": "Every actor and what they did. Background work is shown as its actor_type in parentheses rather than hidden — the unattributed bucket is reported, not dropped, exactly as the runs-per-user panel does.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT COALESCE(u.username, e.username, e.user_id, '(' || e.actor_type || ')') AS \"מבצע\",\n       e.action                          AS \"פעולה\",\n       count(*)                          AS \"פעמים\",\n       max(e.created_at)                 AS \"אחרון\"\nFROM audit_events e\nLEFT JOIN users u ON u.id::text = e.user_id\nWHERE $__timeFilter(e.created_at)\nGROUP BY 1, 2 ORDER BY 3 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 148
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "אחרון"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 52,
+      "type": "table",
+      "title": "מי נגע בעסקה",
+      "description": "Who touched which deal. Joined on proposals.\"dealName\" (quoted camelCase — there is no deal_name column).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT COALESCE(p.\"dealName\", e.proposal_id, '(ללא עסקה)') AS \"עסקה\",\n       COALESCE(e.username, '(' || e.actor_type || ')')      AS \"מבצע\",\n       e.action                          AS \"פעולה\",\n       count(*)                          AS \"פעמים\",\n       max(e.created_at)                 AS \"אחרון\"\nFROM audit_events e\nLEFT JOIN proposals p ON p.id = e.proposal_id\nWHERE $__timeFilter(e.created_at)\nGROUP BY 1, 2, 3 ORDER BY 5 DESC",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 156
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "אחרון"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 53,
+      "type": "table",
+      "title": "פיד פעילות",
+      "description": "The raw trail, newest first. chat_log links an action to the AI run it fired, and through that run to its measured token cost (#366).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_PG}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_PG}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "\nSELECT e.created_at                     AS \"מתי\",\n       COALESCE(e.username, '(' || e.actor_type || ')') AS \"מבצע\",\n       e.action                          AS \"פעולה\",\n       COALESCE(e.entity_type, '—')      AS \"ישות\",\n       COALESCE(e.proposal_id, '—')      AS \"עסקה\",\n       COALESCE(left(e.chat_log_id, 8), '—') AS \"chat log\",\n       COALESCE(e.ip, '—')               AS \"ip\"\nFROM audit_events e\nWHERE $__timeFilter(e.created_at)\nORDER BY e.created_at DESC LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 163
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "מתי"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -81,14 +81,6 @@ scrape_configs:
     scrape_timeout: 30s
 
 
-  # LiteLLM proxy metrics
-  - job_name: 'litellm'
-    static_configs:
-      - targets: [ 'litellm:4000' ]
-    scrape_interval: 60s
-    metrics_path: /metrics
-    scrape_timeout: 30s
-
   # Qdrant vector database metrics
   - job_name: 'qdrant'
     static_configs:

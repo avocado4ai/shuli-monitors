@@ -3,13 +3,13 @@
 echo "Setting up proper n8n metrics configuration..."
 
 # Create a backup of the current prometheus config
-cp /home/dev/2-monitors/.prometheus/prometheus_cfg.yml /home/dev/2-monitors/.prometheus/prometheus_cfg.yml.backup.$(date +%s)
+cp "$PWD/.prometheus/prometheus_cfg.yml" "$PWD/.prometheus/prometheus_cfg.yml.backup.$(date +%s)"
 
 # Update the prometheus configuration to ensure n8n metrics are properly scraped
 echo "Updating Prometheus configuration for n8n metrics..."
 
 # Create the updated prometheus config with n8n metrics
-cat > /home/dev/2-monitors/.prometheus/prometheus_cfg.yml << 'EOF'
+cat > "$PWD/.prometheus/prometheus_cfg.yml" << 'EOF'
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -95,7 +95,7 @@ scrape_configs:
 EOF
 
 # Create the updated dashboard
-cat > /home/dev/2-monitors/dashboards/n8n-monitoring-final.json << 'EOF'
+cat > "$PWD/dashboards/n8n-monitoring-final.json" << 'EOF'
 {
   "annotations": {
     "list": [
@@ -815,7 +815,7 @@ cat > /home/dev/2-monitors/dashboards/n8n-monitoring-final.json << 'EOF'
 EOF
 
 # Copy the updated dashboard to the Grafana dashboards directory
-cp /home/dev/2-monitors/dashboards/n8n-monitoring-final.json /home/dev/2-monitors/grafana/data/dashboards/
+cp "$PWD/dashboards/n8n-monitoring-final.json" "$PWD/grafana/data/dashboards/"
 
 # Restart Prometheus to apply the configuration changes
 echo "Restarting Prometheus to apply configuration changes..."
