@@ -77,6 +77,19 @@ datasources:
       postgresVersion: 1400
       timescaledb: false
 
+  # Loki - Docker container logs (promtail -> loki)
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      maxLines: 1000
+
   # MySQL - Ivrit transcription service database (jobs, segments, transcripts)
   - name: Ivrit MySQL
     uid: ivrit-mysql

@@ -1,4 +1,6 @@
 volumes:
+  loki_data:
+  promtail_positions:
   postgres_data:
   redis_data:
   prometheus_data:
@@ -197,6 +199,35 @@ services:
     environment:
       - REDIS_ADDR=redis://redis-cache:6379
     restart: unless-stopped
+  # Loki - log storage (queried from Grafana via the Loki datasource)
+  loki:
+    image: grafana/loki:3.5.1
+    container_name: loki
+    hostname: loki
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    networks:
+      - n8n_net
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    restart: unless-stopped
+
+  # Promtail - ships Docker container logs to Loki
+  promtail:
+    image: grafana/promtail:3.5.1
+    container_name: promtail
+    hostname: promtail
+    command: ["-config.file=/etc/promtail/promtail-config.yml"]
+    networks:
+      - n8n_net
+    volumes:
+      - ./loki/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - promtail_positions:/positions
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+    restart: unless-stopped
+
   dozzle:
     image: amir20/dozzle:latest
     container_name: dozzle
