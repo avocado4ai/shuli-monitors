@@ -131,7 +131,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "container_processes{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}",
+          "expr": "container_processes{name=~\"n8n|n8n_worker\"}",
           "legendFormat": "Processes in {{container_label_com_docker_container_name}}",
           "refId": "A"
         }
@@ -217,7 +217,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(container_cpu_usage_seconds_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) * 100",
+          "expr": "rate(container_cpu_usage_seconds_total{name=~\"n8n|n8n_worker\"}[5m]) * 100",
           "legendFormat": "CPU Usage - {{container_label_com_docker_container_name}}",
           "refId": "A"
         }
@@ -294,7 +294,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "container_memory_usage_bytes{container_label_com_docker_container_name=~\"n8n|n8n_worker\"} / 1024 / 1024",
+          "expr": "container_memory_usage_bytes{name=~\"n8n|n8n_worker\"} / 1024 / 1024",
           "legendFormat": "Memory Usage - {{container_label_com_docker_container_name}}",
           "refId": "A"
         }
@@ -371,12 +371,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(container_network_receive_bytes_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) / 1024",
+          "expr": "rate(container_network_receive_bytes_total{name=~\"n8n|n8n_worker\"}[5m]) / 1024",
           "legendFormat": "Network In - {{container_label_com_docker_container_name}}",
           "refId": "A"
         },
         {
-          "expr": "rate(container_network_transmit_bytes_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) / 1024",
+          "expr": "rate(container_network_transmit_bytes_total{name=~\"n8n|n8n_worker\"}[5m]) / 1024",
           "legendFormat": "Network Out - {{container_label_com_docker_container_name}}",
           "refId": "B"
         }
@@ -453,12 +453,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(container_fs_reads_bytes_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) / 1024",
+          "expr": "rate(container_fs_reads_bytes_total{name=~\"n8n|n8n_worker\"}[5m]) / 1024",
           "legendFormat": "Disk Reads - {{container_label_com_docker_container_name}}",
           "refId": "A"
         },
         {
-          "expr": "rate(container_fs_writes_bytes_total{container_label_com_docker_container_name=~\"n8n|n8n_worker\"}[5m]) / 1024",
+          "expr": "rate(container_fs_writes_bytes_total{name=~\"n8n|n8n_worker\"}[5m]) / 1024",
           "legendFormat": "Disk Writes - {{container_label_com_docker_container_name}}",
           "refId": "B"
         }
@@ -620,12 +620,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "increase(http_requests_total{handler=~\"/rest/executions.*\", job=\"n8n\"}[5m])",
+          "expr": "rate(n8n_workflow_execution_duration_seconds_count{job=\"n8n-main\"}[5m])",
           "legendFormat": "Execution Requests",
           "refId": "A"
         }
       ],
-      "title": "n8n Execution API Requests",
+      "title": "n8n Workflow Executions (rate)",
       "type": "timeseries"
     }
   ],
@@ -646,7 +646,7 @@
         "multi": true,
         "name": "n8n_container",
         "options": [],
-        "query": "label_values(container_cpu_usage_seconds_total{container_label_com_docker_container_name=~\"n8n.*\"}, container_label_com_docker_container_name)",
+        "query": "label_values(container_cpu_usage_seconds_total{name=~\"n8n.*\"}, container_label_com_docker_container_name)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

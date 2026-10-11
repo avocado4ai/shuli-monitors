@@ -126,7 +126,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_active_workflow_count{instance=~\".*:9464\"}",
+          "expr": "n8n_active_workflow_count{job=\"n8n-main\"}",
           "legendFormat": "Active Workflows",
           "refId": "A"
         }
@@ -204,12 +204,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_scaling_mode_queue_jobs_waiting{instance=~\".*:5678\"}",
+          "expr": "n8n_scaling_mode_queue_jobs_waiting{job=\"n8n-main\"}",
           "legendFormat": "Waiting Jobs",
           "refId": "A"
         },
         {
-          "expr": "n8n_scaling_mode_queue_jobs_active{instance=~\".*:5678\"}",
+          "expr": "n8n_scaling_mode_queue_jobs_active{job=\"n8n-main\"}",
           "legendFormat": "Active Jobs",
           "refId": "B"
         }
@@ -304,12 +304,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(n8n_scaling_mode_queue_jobs_completed{instance=~\".*:5678\"}[5m])",
+          "expr": "rate(n8n_scaling_mode_queue_jobs_completed{job=\"n8n-main\"}[5m])",
           "legendFormat": "Completed",
           "refId": "A"
         },
         {
-          "expr": "rate(n8n_scaling_mode_queue_jobs_failed{instance=~\".*:5678\"}[5m])",
+          "expr": "rate(n8n_scaling_mode_queue_jobs_failed{job=\"n8n-main\"}[5m])",
           "legendFormat": "Failed",
           "refId": "B"
         }
@@ -395,7 +395,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(n8n_process_cpu_seconds_total{instance=~\".*:9464\"}[5m]) * 100",
+          "expr": "rate(n8n_process_cpu_seconds_total{job=\"n8n-main\"}[5m]) * 100",
           "legendFormat": "n8n Main CPU Usage",
           "refId": "A"
         }
@@ -472,12 +472,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_nodejs_heap_size_used_bytes{instance=~\".*:9464\"} / 1024 / 1024",
+          "expr": "n8n_nodejs_heap_size_used_bytes{job=\"n8n-main\"} / 1024 / 1024",
           "legendFormat": "Heap Used (Main)",
           "refId": "A"
         },
         {
-          "expr": "n8n_nodejs_heap_size_total_bytes{instance=~\".*:9464\"} / 1024 / 1024",
+          "expr": "n8n_nodejs_heap_size_total_bytes{job=\"n8n-main\"} / 1024 / 1024",
           "legendFormat": "Heap Total (Main)",
           "refId": "B"
         }
@@ -562,12 +562,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "n8n_nodejs_eventloop_lag_mean_seconds{instance=~\".*:9464\"}",
+          "expr": "n8n_nodejs_eventloop_lag_mean_seconds{job=\"n8n-main\"}",
           "legendFormat": "Mean (Main)",
           "refId": "A"
         },
         {
-          "expr": "n8n_nodejs_eventloop_lag_p99_seconds{instance=~\".*:9464\"}",
+          "expr": "n8n_nodejs_eventloop_lag_p99_seconds{job=\"n8n-main\"}",
           "legendFormat": "P99 (Main)",
           "refId": "B"
         }

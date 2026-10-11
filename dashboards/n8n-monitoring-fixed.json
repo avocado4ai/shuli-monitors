@@ -400,7 +400,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total{job=~\"n8n-.*\"}[5m]) * 100",
+          "expr": "rate(n8n_process_cpu_seconds_total{job=\"n8n-main\"}[5m]) * 100",
           "legendFormat": "n8n CPU Usage",
           "refId": "A"
         }
@@ -477,7 +477,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "process_resident_memory_bytes{job=~\"n8n-.*\"} / 1024 / 1024",
+          "expr": "n8n_process_resident_memory_bytes{job=\"n8n-main\"} / 1024 / 1024",
           "legendFormat": "Memory Usage",
           "refId": "A"
         }
@@ -562,12 +562,12 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "expr": "go_goroutines{job=~\"n8n-.*\"}",
+          "expr": "n8n_nodejs_active_handles{job=\"n8n-main\"}",
           "legendFormat": "Goroutines",
           "refId": "A"
         }
       ],
-      "title": "Go Runtime Metrics",
+      "title": "Node.js Active Handles",
       "type": "timeseries"
     },
     {
