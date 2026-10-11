@@ -60,9 +60,8 @@ scrape_configs:
   # Traefik reverse proxy metrics
   - job_name: 'traefik'
     static_configs:
-      - targets: [ 'traefik:8883' ]
+      - targets: [ 'traefik:8080' ]
         labels:
-          service: 'traefik'
           role: 'reverse-proxy'
     metrics_path: '/metrics'
     scrape_interval: 30s
