@@ -186,6 +186,17 @@ services:
       - "traefik.http.routers.node-exporter.entrypoints=web"
       - "traefik.http.services.node-exporter.loadbalancer.server.port=9100"
       - "traefik.docker.network=n8n_net"
+
+  # Redis Exporter - Prometheus metrics for redis-cache
+  redis_exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis_exporter
+    hostname: redis_exporter
+    networks:
+      - n8n_net
+    environment:
+      - REDIS_ADDR=redis://redis-cache:6379
+    restart: unless-stopped
   dozzle:
     image: amir20/dozzle:latest
     container_name: dozzle

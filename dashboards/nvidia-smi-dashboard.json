@@ -90,10 +90,10 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "nvidia_smi_temperature_gpu{uuid=~\"$uuid\"}",
+          "expr": "DCGM_FI_DEV_GPU_TEMP{UUID=~\"$uuid\"}",
           "instant": false,
           "interval": "",
-          "legendFormat": "GPU {{name}}",
+          "legendFormat": "GPU {{gpu}} ({{modelName}})",
           "refId": "A"
         }
       ],
@@ -188,7 +188,7 @@
       "pluginVersion": "6.7.3",
       "targets": [
         {
-          "expr": "avg(nvidia_smi_temperature_gpu{uuid=~\"$uuid\"})",
+          "expr": "avg(DCGM_FI_DEV_GPU_TEMP{UUID=~\"$uuid\"})",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -243,9 +243,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "nvidia_smi_power_draw_watts{uuid=~\"$uuid\"}",
+          "expr": "DCGM_FI_DEV_POWER_USAGE{UUID=~\"$uuid\"}",
           "interval": "",
-          "legendFormat": "GPU {{name}}",
+          "legendFormat": "GPU {{gpu}} ({{modelName}})",
           "refId": "A"
         }
       ],
@@ -343,7 +343,7 @@
       "pluginVersion": "6.7.3",
       "targets": [
         {
-          "expr": "sum(nvidia_smi_power_draw_watts{uuid=~\"$uuid\"})",
+          "expr": "sum(DCGM_FI_DEV_POWER_USAGE{UUID=~\"$uuid\"})",
           "instant": true,
           "interval": "",
           "legendFormat": "",
@@ -399,9 +399,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "nvidia_smi_utilization_gpu_ratio{uuid=~\"$uuid\"}",
+          "expr": "DCGM_FI_DEV_GPU_UTIL{UUID=~\"$uuid\"} / 100",
           "interval": "",
-          "legendFormat": "GPU {{name}}",
+          "legendFormat": "GPU {{gpu}} ({{modelName}})",
           "refId": "A"
         }
       ],
@@ -489,9 +489,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "nvidia_smi_memory_used_mb{uuid=~\"$uuid\"}",
+          "expr": "DCGM_FI_DEV_FB_USED{UUID=~\"$uuid\"}",
           "interval": "",
-          "legendFormat": "GPU {{name}}",
+          "legendFormat": "GPU {{gpu}} ({{modelName}})",
           "refId": "A"
         }
       ],
@@ -581,11 +581,11 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "nvidia_smi_sm_clock_mhz{uuid=~\"$uuid\"}",
+          "expr": "DCGM_FI_DEV_SM_CLOCK{UUID=~\"$uuid\"}",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "GPU {{name}}",
+          "legendFormat": "GPU {{gpu}} ({{modelName}})",
           "refId": "A"
         }
       ],
@@ -642,7 +642,7 @@
         "allValue": null,
         "current": {},
         "datasource": {"type": "prometheus", "uid": "prometheus"},
-        "definition": "label_values(nvidia_smi_temperature_gpu, uuid)",
+        "definition": "label_values(DCGM_FI_DEV_GPU_TEMP, UUID)",
         "hide": 0,
         "includeAll": true,
         "index": -1,
@@ -650,7 +650,7 @@
         "multi": true,
         "name": "uuid",
         "options": [],
-        "query": "label_values(nvidia_smi_temperature_gpu, uuid)",
+        "query": "label_values(DCGM_FI_DEV_GPU_TEMP, UUID)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

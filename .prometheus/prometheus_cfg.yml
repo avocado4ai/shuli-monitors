@@ -57,6 +57,16 @@ scrape_configs:
   # Metrics are handled by the ollama-metrics container
 
 
+  # Redis metrics (redis_exporter -> redis-cache)
+  - job_name: 'redis'
+    static_configs:
+      - targets: [ 'redis_exporter:9121' ]
+        labels:
+          service: 'redis'
+          role: 'cache'
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
   # Traefik reverse proxy metrics
   - job_name: 'traefik'
     static_configs:
