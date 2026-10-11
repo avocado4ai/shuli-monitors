@@ -14,8 +14,8 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "node_network_up{device~\"ssh.*\"}",
-          "legendFormat": "SSH Sessions",
+          "expr": "node_netstat_Tcp_CurrEstab",
+          "legendFormat": "Established TCP connections",
           "refId": "A"
         },
         {
@@ -99,13 +99,13 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "n8n_executions_total",
-          "legendFormat": "n8n Active Executions",
+          "expr": "sum(rate(n8n_workflow_execution_duration_seconds_count[5m]))",
+          "legendFormat": "n8n executions/s",
           "refId": "A"
         },
         {
-          "expr": "time() - container_start_time_seconds",
-          "legendFormat": "Container Uptime (seconds)",
+          "expr": "time() - container_start_time_seconds{name=~\"n8n.*\"}",
+          "legendFormat": "{{name}} uptime (s)",
           "refId": "B"
         }
       ],
@@ -269,27 +269,18 @@
     },
     {
       "id": 4,
-      "title": "Session Duration Heatmap",
-      "type": "heatmap",
+      "title": "Workflow Execution Duration p95",
+      "type": "timeseries",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(process_cpu_seconds_total[5m]))",
-          "legendFormat": "CPU Usage by Process",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(n8n_workflow_execution_duration_seconds_bucket[5m])))",
+          "legendFormat": "p95",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            },
-            "scaleDistribution": {
-              "type": "linear"
-            }
-          }
+          "unit": "s"
         },
         "overrides": []
       },
@@ -298,40 +289,6 @@
         "w": 12,
         "x": 12,
         "y": 8
-      },
-      "options": {
-        "calculate": false,
-        "cellGap": 2,
-        "cellValues": {},
-        "color": {
-          "exponent": 0.5,
-          "fill": "dark-orange",
-          "mode": "spectrum",
-          "reverse": false,
-          "scale": "exponential",
-          "scheme": "Oranges",
-          "steps": 64
-        },
-        "exemplars": {
-          "color": "rgba(255,0,255,0.7)"
-        },
-        "filterValues": {
-          "le": 1e-9
-        },
-        "legend": {
-          "show": false
-        },
-        "rowsFrame": {
-          "layout": "auto"
-        },
-        "tooltip": {
-          "show": true,
-          "yHistogram": false
-        },
-        "yAxis": {
-          "axisPlacement": "left",
-          "reverse": false
-        }
       }
     },
     {

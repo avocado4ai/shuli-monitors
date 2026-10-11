@@ -15,12 +15,12 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "increase(node_systemd_unit_state{name=\"ssh.service\",state=\"failed\"}[5m])",
-          "legendFormat": "SSH Failed Logins",
+          "expr": "sum(rate(traefik_service_requests_total{code=~\"401|403\"}[5m])) or vector(0)",
+          "legendFormat": "Auth failures (401/403)",
           "refId": "A"
         },
         {
-          "expr": "rate(apache_access_log_total{status=~\"4.*\"}[5m])",
+          "expr": "sum(rate(traefik_service_requests_total{code=~\"4..\"}[5m])) or vector(0)",
           "legendFormat": "HTTP 4xx Errors",
           "refId": "B"
         }
@@ -142,13 +142,13 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "rate(process_start_time_seconds[1h]) > 10",
-          "legendFormat": "High Process Creation Rate",
+          "expr": "changes(n8n_process_start_time_seconds[1h])",
+          "legendFormat": "n8n restarts (1h)",
           "refId": "A"
         },
         {
-          "expr": "changes(pg_stat_database_numbackends[10m]) > 5",
-          "legendFormat": "Rapid DB Connection Changes",
+          "expr": "sum(changes(pg_stat_database_numbackends[10m]))",
+          "legendFormat": "DB connection changes (10m)",
           "refId": "B"
         }
       ],
@@ -223,38 +223,18 @@
     },
     {
       "id": 3,
-      "title": "Geographic Session Analysis",
-      "type": "geomap",
+      "title": "Requests by Service (Traefik)",
+      "type": "timeseries",
       "targets": [
         {
-          "expr": "apache_access_log_remote_addr",
-          "legendFormat": "Client IPs",
+          "expr": "topk(10, sum by (service) (rate(traefik_service_requests_total[5m])))",
+          "legendFormat": "{{service}}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
+          "unit": "reqps"
         },
         "overrides": []
       },
@@ -263,74 +243,6 @@
         "w": 12,
         "x": 0,
         "y": 8
-      },
-      "options": {
-        "basemap": {
-          "config": {},
-          "name": "Layer 0",
-          "type": "default"
-        },
-        "controls": {
-          "mouseWheelZoom": true,
-          "showAttribution": true,
-          "showDebug": false,
-          "showMeasure": false,
-          "showScale": false,
-          "showZoom": true
-        },
-        "layers": [
-          {
-            "config": {
-              "showLegend": true,
-              "style": {
-                "color": {
-                  "field": "Value",
-                  "fixed": "dark-green"
-                },
-                "opacity": 0.4,
-                "rotation": {
-                  "fixed": 0,
-                  "max": 360,
-                  "min": -360,
-                  "mode": "mod"
-                },
-                "size": {
-                  "field": "Value",
-                  "fixed": 5,
-                  "max": 15,
-                  "min": 2
-                },
-                "symbol": {
-                  "fixed": "img/icons/marker/circle.svg",
-                  "mode": "fixed"
-                },
-                "textConfig": {
-                  "fontSize": 12,
-                  "offsetX": 0,
-                  "offsetY": 0,
-                  "textAlign": "center",
-                  "textBaseline": "middle"
-                }
-              }
-            },
-            "location": {
-              "mode": "auto"
-            },
-            "name": "Layer 1",
-            "tooltip": true,
-            "type": "markers"
-          }
-        ],
-        "tooltip": {
-          "mode": "details"
-        },
-        "view": {
-          "allLayers": true,
-          "id": "zero",
-          "lat": 0,
-          "lon": 0,
-          "zoom": 1
-        }
       }
     },
     {
@@ -339,12 +251,12 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "count((time() - process_start_time_seconds) > 86400)",
+          "expr": "count((time() - process_start_time_seconds) > 86400) or vector(0)",
           "legendFormat": "Sessions > 24 hours",
           "refId": "A"
         },
         {
-          "expr": "count((time() - process_start_time_seconds) < 60)",
+          "expr": "count((time() - process_start_time_seconds) < 60) or vector(0)",
           "legendFormat": "Sessions < 1 minute",
           "refId": "B"
         }
@@ -399,12 +311,13 @@
     },
     {
       "id": 5,
-      "title": "n8n Workflow Security Events",
-      "type": "logs",
+      "title": "Auth Failures by Service (Traefik 401/403)",
+      "type": "timeseries",
       "targets": [
         {
-          "expr": "{job=\"n8n\"} |= \"error\" or \"failed\" or \"unauthorized\"",
-          "refId": "A"
+          "expr": "sum by (service) (rate(traefik_service_requests_total{code=~\"401|403\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{service}}"
         }
       ],
       "gridPos": {
@@ -413,15 +326,11 @@
         "x": 0,
         "y": 16
       },
-      "options": {
-        "showTime": true,
-        "showLabels": false,
-        "showCommonLabels": false,
-        "wrapLogMessage": false,
-        "prettifyLogMessage": false,
-        "enableLogDetails": true,
-        "dedupStrategy": "none",
-        "sortOrder": "Descending"
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
       }
     }
   ],
