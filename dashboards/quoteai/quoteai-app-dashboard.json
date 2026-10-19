@@ -799,7 +799,7 @@
             "uid": "quoteai-postgres"
           },
           "format": "table",
-          "rawSql": "SELECT timestamp AS time, level, message FROM logs WHERE level IN ('WARN','ERROR') ORDER BY timestamp DESC LIMIT 25",
+          "rawSql": "SELECT timestamp AS time, level, message FROM logs WHERE upper(level) IN ('WARN','WARNING','ERROR') ORDER BY timestamp DESC LIMIT 25",
           "refId": "A"
         }
       ],
